@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MotoTaller – Sistema de Ventas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     PANTALLA DE LOGIN
+══════════════════════════════════════════════ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-left">
+    <div class="login-bg-text">TALLER</div>
+    <div class="login-logo">🔧</div>
+    <div class="login-title">MotoTaller</div>
+    <div class="login-subtitle">Sistema de Ventas · Acceso seguro</div>
+
+    <div class="login-form">
+      <div class="login-field">
+        <label>Usuario</label>
+        <input id="login-user" type="text" placeholder="Ingresa tu usuario"
+               autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="login-field">
+        <label>Contraseña</label>
+        <input id="login-pass" type="password" placeholder="••••••••"
+               autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div style="text-align: right; margin-bottom: 20px;">
+        <a href="#" style="font-size: 11px; color: var(--text3); text-decoration: none;" onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
+      </div>
+      <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+      <button class="login-btn" onclick="doLogin()">Ingresar al sistema →</button>
+    </div>
+
+    <div class="login-hints">
+      <div class="login-hints-title">Usuarios de prueba</div>
+      <div class="login-hint-row">
+        <span><span class="role-badge admin">Admin</span></span>
+        <span class="creds">admin / admin123</span>
+      </div>
+      <div class="login-hint-row">
+        <span><span class="role-badge">Ventas</span></span>
+        <span class="creds">ventas / ventas123</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-right-inner">
+      <h3>¿Qué incluye?</h3>
+      <div class="login-feature">
+        <div class="f-icon">👤</div>
+        <div><h4>Clientes y Motos</h4><p>Registro completo de clientes y sus motos con historial de servicios.</p></div>
+      </div>
+      <div class="login-feature">
+        <div class="f-icon">📦</div>
+        <div><h4>Inventario</h4><p>Control de repuestos con alertas automáticas de stock mínimo.</p></div>
+      </div>
+      <div class="login-feature">
+        <div class="f-icon">🧾</div>
+        <div><h4>Ventas y facturación</h4><p>Emisión de facturas y reportes de ingresos por período.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     APP PRINCIPAL (oculta hasta hacer login)
+══════════════════════════════════════════════ -->
+<div class="app-shell app-hidden" id="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🔧</div>
+      <h1>MotoTaller</h1>
+      <span>Sistema de Ventas</span>
+    </div>
+    <div class="nav-section">Principal</div>
+    <button class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </button>
+    <div class="nav-section">Gestión</div>
+    <button class="nav-item" onclick="showPage('clientes',this)">
+      <span class="nav-icon">👤</span> Clientes
+    </button>
+    <button class="nav-item" onclick="showPage('motos',this)">
+      <span class="nav-icon">🏍️</span> Motos
+    </button>
+    <button class="nav-item" onclick="showPage('inventario',this)">
+      <span class="nav-icon">📦</span> Inventario
+      <span class="badge" id="badge-inv" style="display:none">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('ventas',this)">
+      <span class="nav-icon">🧾</span> Ventas
+    </button>
+    <div class="sidebar-footer">
+      <div id="sidebar-user-name" style="font-weight:600;color:var(--text2);margin-bottom:2px">–</div>
+      <div id="sidebar-user-role" style="font-size:10px;color:var(--text3);margin-bottom:10px">–</div>
+      <div style="display:flex; gap:5px;">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openModalPerfil()">⚙️ Perfil</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="doLogout()">🚪 Salir</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="topbar-title">Dashboard</h2>
+      <div class="topbar-right">
+        <input class="search-bar" placeholder="Buscar..." id="global-search"/>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card orange">
+            <div class="label">Ventas del mes</div>
+            <div class="value" id="dash-ventas">$0</div>
+            <div class="sub" id="dash-ventas-sub">0 facturas emitidas</div>
+          </div>
+          <div class="stat-card green">
+            <div class="label">Clientes</div>
+            <div class="value" id="dash-clientes">0</div>
+            <div class="sub">Registrados en el sistema</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="label">Stock bajo</div>
+            <div class="value" id="dash-stock">0</div>
+            <div class="sub">Repuestos bajo mínimo</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:20px">
+          <div class="card">
+            <div class="section-header" style="margin-bottom:12px">
+              <h3>Alertas de inventario</h3>
+            </div>
+            <div id="dash-alertas">
+              <div class="empty-state"><div class="icon">📦</div>Sin alertas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CLIENTES ── -->
+      <div class="page" id="page-clientes">
+        <div class="section-header">
+          <h3>Clientes registrados</h3>
+          <button class="btn btn-primary" onclick="openModal('modal-cliente')">+ Nuevo cliente</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+            <input class="search-bar" style="width:100%"
+                   placeholder="Buscar por nombre, cédula o teléfono..."
+                   id="search-clientes" oninput="renderClientes()"/>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>ID</th><th>Nombre</th><th>Cédula / NIT</th>
+                <th>Teléfono</th><th>Ciudad</th><th>Motos</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tabla-clientes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MOTOS ── -->
+      <div class="page" id="page-motos">
+        <div class="section-header">
+          <h3>Motos registradas</h3>
+          <button class="btn btn-primary" onclick="openModal('modal-moto')">+ Nueva moto</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+            <input class="search-bar" style="width:100%"
+                   placeholder="Buscar por placa, marca o modelo..."
+                   id="search-motos" oninput="renderMotos()"/>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>ID</th><th>Placa</th><th>Marca / Modelo</th>
+                <th>Año</th><th>Cilindraje</th><th>Propietario</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tabla-motos"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── INVENTARIO ── -->
+      <div class="page" id="page-inventario">
+        <div class="section-header">
+          <h3>Inventario de repuestos</h3>
+          <button class="btn btn-primary" onclick="openModal('modal-repuesto')">+ Nuevo repuesto</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">
+            <input class="search-bar" style="width:100%"
+                   placeholder="Buscar repuesto..." id="search-inv" oninput="renderInventario()"/>
+            <select class="search-bar" style="width:180px" id="filter-cat" onchange="renderInventario()">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Código</th><th>Descripción</th><th>Categoría</th>
+                <th>Stock</th><th>Stock Mín.</th><th>P. Costo</th>
+                <th>P. Venta</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tabla-inv"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ── VENTAS ── -->
+      <div class="page" id="page-ventas" style="display:none; height:100%; display:flex; flex-direction:column">
+        <!-- Pestañas POS / Historial -->
+        <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-shrink:0;align-items:center">
+          <button class="btn btn-primary" id="btn-tab-pos" onclick="switchVentasTab('pos')">🛒 Punto de Venta</button>
+          <button class="btn btn-ghost" id="btn-tab-hist" onclick="switchVentasTab('hist')">🧾 Historial de Facturas</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost" onclick="generarCierreCaja()">💰 Cierre de Caja</button>
+        </div>
+
+        <!-- VISTA POS -->
+        <div id="view-pos" style="display:flex; gap:20px; flex:1; min-height:0">
+          <!-- Catálogo -->
+          <div class="card" style="flex:6; display:flex; flex-direction:column; padding:0; overflow:hidden; height:100%">
+            <div style="padding:14px; border-bottom:1px solid var(--border)">
+              <input class="search-bar" style="width:100%" placeholder="Buscar producto por nombre o código..." id="pos-search" oninput="renderPosCatalog()"/>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:14px; display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; align-content:start" id="pos-catalog">
+              <!-- Cards de productos -->
+            </div>
+          </div>
+
+          <!-- Carrito -->
+          <div class="card" style="flex:4; display:flex; flex-direction:column; padding:0; height:100%">
+            <div style="padding:16px; border-bottom:1px solid var(--border); background:var(--bg3)">
+              <h3 style="margin:0;font-size:16px">Factura Actual</h3>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:10px" id="pos-cart">
+              <!-- Ítems del carrito -->
+            </div>
+            <div style="padding:16px; border-top:1px solid var(--border); background:var(--bg3); flex-shrink:0">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:var(--text2)">
+                <span>Subtotal:</span> <span id="pos-subtotal">$0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:var(--text2)">
+                <span>IVA (19%):</span> <span id="pos-iva">$0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:14px;font-size:22px;font-weight:700;color:var(--orange)">
+                <span>TOTAL:</span> <span id="pos-total">$0</span>
+              </div>
+              <button class="btn btn-primary" style="width:100%;font-size:16px;padding:14px;justify-content:center" onclick="openModalCobro()">COBRAR Y FACTURAR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA HISTORIAL -->
+        <div id="view-hist" style="display:none; flex:1; flex-direction:column; min-height:0">
+          <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="stat-card orange"><div class="label">Total facturado</div><div class="value" id="v-total">$0</div></div>
+            <div class="stat-card green"><div class="label">Repuestos vendidos</div><div class="value" id="v-rep">$0</div></div>
+          </div>
+          <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column">
+            <div class="table-wrap" style="flex:1; overflow-y:auto">
+              <table>
+                <thead><tr>
+                  <th>N° Factura</th><th>Fecha</th><th>Cliente</th>
+                  <th>Subtotal</th><th>IVA (19%)</th><th>Descuento</th>
+                  <th>Total</th><th>Pago</th><th>Acciones</th>
+                </tr></thead>
+                <tbody id="tabla-ventas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+    </div><!-- /content -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+</div><!-- /app-shell -->
+
+
+<!-- ══════════════════════════════════════════════
+     MODALES
+══════════════════════════════════════════════ -->
+
+<!-- Modal: Nuevo / Editar Cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-cliente-title">Nuevo cliente</h3>
+      <button class="close-btn" onclick="closeModal('modal-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>Nombre completo *</label><input id="c-nombre" placeholder="Carlos Martínez"/></div>
+        <div class="field"><label>Cédula / NIT *</label><input id="c-cedula" placeholder="10.234.567"/></div>
+        <div class="field"><label>Teléfono / WhatsApp *</label><input id="c-tel" placeholder="315 234 5678"/></div>
+        <div class="field"><label>Ciudad</label><input id="c-ciudad" placeholder="Medellín"/></div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Correo electrónico</label>
+          <input id="c-email" placeholder="correo@ejemplo.com" type="email"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCliente()">Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Moto -->
+<div class="modal-overlay" id="modal-moto">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Registrar moto</h3>
+      <button class="close-btn" onclick="closeModal('modal-moto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>Propietario *</label>
+          <select id="m-cliente"><option value="">Seleccionar cliente...</option></select>
+        </div>
+        <div class="field"><label>Placa *</label><input id="m-placa" placeholder="ABJ-12C"/></div>
+        <div class="field"><label>Marca *</label><input id="m-marca" placeholder="Honda"/></div>
+        <div class="field"><label>Modelo *</label><input id="m-modelo" placeholder="CB 150"/></div>
+        <div class="field"><label>Año</label><input id="m-anio" type="number" placeholder="2022"/></div>
+        <div class="field"><label>Cilindraje</label><input id="m-cc" placeholder="150 cc"/></div>
+        <div class="field"><label>Color</label><input id="m-color" placeholder="Rojo"/></div>
+        <div class="field"><label>Kilometraje actual</label><input id="m-km" type="number" placeholder="15000"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-moto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMoto()">Guardar moto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo / Editar Repuesto -->
+<div class="modal-overlay" id="modal-repuesto">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-rep-title">Nuevo repuesto</h3>
+      <button class="close-btn" onclick="closeModal('modal-repuesto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>Código *</label><input id="r-codigo" placeholder="R001"/></div>
+        <div class="field"><label>Categoría *</label><input id="r-cat" placeholder="Lubricantes"/></div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Descripción *</label>
+          <input id="r-desc" placeholder="Aceite Motor 10W-40 / 1L"/>
+        </div>
+        <div class="field"><label>Stock actual *</label><input id="r-stock" type="number" placeholder="0" min="0"/></div>
+        <div class="field"><label>Stock mínimo *</label><input id="r-min" type="number" placeholder="5" min="0"/></div>
+        <div class="field"><label>Precio costo (COP)</label><input id="r-costo" type="number" placeholder="12000" min="0"/></div>
+        <div class="field"><label>Precio venta (COP) *</label><input id="r-venta" type="number" placeholder="18500" min="0"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-repuesto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRepuesto()">Guardar repuesto</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal: Cobro -->
+<div class="modal-overlay" id="modal-cobro">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <h3>Cobrar Venta</h3>
+      <button class="close-btn" onclick="closeModal('modal-cobro')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:12px;color:var(--text3)">Total a cobrar</div>
+        <div style="font-size:32px;font-weight:700;color:var(--orange)" id="cobro-total-view">$0</div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Cliente (Opcional)</label>
+          <select id="cobro-cliente"><option value="">Venta Directa / Mostrador</option></select>
+        </div>
+        <div class="field"><label>Forma de pago</label>
+          <select id="cobro-pago">
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Nequi / Daviplata</option>
+            <option>Crédito</option>
+          </select>
+        </div>
+        <div class="field"><label>Descuento total (COP)</label>
+          <input id="cobro-desc" type="number" placeholder="0" oninput="calcCobro()"/>
+        </div>
+        <div class="field">
+          <label>Observaciones</label>
+          <textarea id="cobro-obs" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cobro')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePosSale()">Confirmar Venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Mi Perfil -->
+<div class="modal-overlay" id="modal-perfil">
+  <div class="modal" style="width:350px">
+    <div class="modal-header">
+      <h3>Mi Perfil</h3>
+      <button class="close-btn" onclick="closeModal('modal-perfil')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre Completo</label>
+          <input id="p-nombre" placeholder="Tu nombre"/>
+        </div>
+        <div class="field">
+          <label>Nueva Contraseña</label>
+          <input id="p-pass" type="text" placeholder="Tu contraseña"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-perfil')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Modal: Cierre de Caja -->
+<div class="modal-overlay" id="modal-cierre">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <h3>Resumen de Caja (Hoy)</h3>
+      <button class="close-btn" onclick="closeModal('modal-cierre')">✕</button>
+    </div>
+    <div class="modal-body" id="cierre-body">
+      <!-- El contenido se genera dinámicamente -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cierre')">Cerrar</button>
+      <button class="btn btn-primary" onclick="imprimirCierre()">🖨️ Imprimir Cierre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════ -->
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script src="data.js"></script>
+<script src="firebase-db.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
+
+<!-- Contenedor para impresión de ticket -->
+<div id="ticket-print" class="ticket-print"></div>
+
+</body>
+</html>
