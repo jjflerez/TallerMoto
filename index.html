@@ -229,8 +229,19 @@
         <div id="view-pos" style="display:flex; gap:20px; flex:1; min-height:0">
           <!-- Catálogo -->
           <div class="card" style="flex:6; display:flex; flex-direction:column; padding:0; overflow:hidden; height:100%">
-            <div style="padding:14px; border-bottom:1px solid var(--border)">
-              <input class="search-bar" style="width:100%" placeholder="Buscar producto por nombre o código..." id="pos-search" oninput="renderPosCatalog()"/>
+            <div style="display:flex; gap:10px; padding:14px; border-bottom:1px solid var(--border); background:var(--bg3)">
+              <div style="flex:1">
+                <label style="font-size:10px; color:var(--text3); margin-bottom:4px; display:block">⌨️ Búsqueda manual</label>
+                <input class="search-bar" style="width:100%" placeholder="Nombre o código..." id="pos-search" oninput="renderPosCatalog()"/>
+              </div>
+              <div style="flex:1">
+                <label style="font-size:10px; color:var(--text3); margin-bottom:4px; display:block">🏍️ Compatibilidad</label>
+                <input class="search-bar" style="width:100%" placeholder="Ej: Boxer" id="pos-compat-search" oninput="renderPosCatalog()"/>
+              </div>
+              <div style="flex:1">
+                <label style="font-size:10px; color:var(--green); margin-bottom:4px; display:block; font-weight:700">🏷️ LECTOR DE BARRAS</label>
+                <input class="search-bar" style="width:100%; border-color:var(--green)" placeholder="Pita el código aquí..." id="pos-barcode-input" onkeydown="handleBarcode(event)"/>
+              </div>
             </div>
             <div style="flex:1; overflow-y:auto; padding:14px; display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; align-content:start" id="pos-catalog">
               <!-- Cards de productos -->
@@ -361,6 +372,10 @@
         <div class="field" style="grid-column:1/-1">
           <label>Descripción *</label>
           <input id="r-desc" placeholder="Aceite Motor 10W-40 / 1L"/>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Motos compatibles (Modelos)</label>
+          <input id="r-compat" placeholder="Ej: Boxer CT100, Pulsar NS200, AKT 125"/>
         </div>
         <div class="field"><label>Stock actual *</label><input id="r-stock" type="number" placeholder="0" min="0"/></div>
         <div class="field"><label>Stock mínimo *</label><input id="r-min" type="number" placeholder="5" min="0"/></div>

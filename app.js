@@ -23,6 +23,14 @@ function showPage(name, btn) {
   const sb = document.getElementById('sidebar');
   if (sb.classList.contains('open')) toggleSidebar();
 
+  // Auto-foco en lector de barras si es ventas
+  if (name === 'ventas') {
+    setTimeout(() => {
+      const inp = document.getElementById('pos-barcode-input');
+      if (inp) inp.focus();
+    }, 300);
+  }
+
   refresh();
 }
 
@@ -39,10 +47,32 @@ function refresh() {
   updateBadges();
   renderDashboard();
   renderClientes();
-  renderMotos();
-  renderInventario();
   renderVentas();
   checkCredits();
+  inyectarNuevosProductos();
+}
+
+function inyectarNuevosProductos() {
+  const nuevos = [
+    { id: 'R013', codigo: 'R013', desc: 'Llanta 90/90-18 Pistera',           cat: 'Llantas',     stock: 6,  min: 2, costo: 95000,  venta: 145000, compat: 'Boxer, NKD, RX115' },
+    { id: 'R014', codigo: 'R014', desc: 'Biela Motor Original Boxer',        cat: 'Motor',       stock: 3,  min: 1, costo: 65000,  venta: 98000,  compat: 'Boxer CT100, Boxer Platino' },
+    { id: 'R015', codigo: 'R015', desc: 'Kit Cilindro Completo NKD',         cat: 'Motor',       stock: 4,  min: 1, costo: 120000, venta: 185000, compat: 'AKT NKD 125, EVO NE' },
+    { id: 'R016', codigo: 'R016', desc: 'Rines de Aluminio 1.60x17 (Par)',   cat: 'Accesorios',  stock: 2,  min: 1, costo: 110000, venta: 165000, compat: 'Boxer, AX100, Viva R' },
+  ];
+
+  let agregados = false;
+  nuevos.forEach(n => {
+    if (!state.inventario.find(r => r.codigo === n.codigo)) {
+      state.inventario.push(n);
+      agregados = true;
+    }
+  });
+
+  if (agregados) {
+    if (state.nextIds.r < 17) state.nextIds.r = 17;
+    toast('Nuevos productos sincronizados con la nube', 'info');
+    refresh();
+  }
 }
 
 function updateBadges() {
@@ -410,32 +440,35 @@ function renderInventario() {
 }
 
 function clearRepuestoForm() {
-  ['r-codigo','r-desc','r-cat','r-stock','r-min','r-costo','r-venta'].forEach(id => document.getElementById(id).value = '');
-  state.editingRepuesto = null;
+  ['r-codigo','r-desc','r-cat','r-compat','r-stock','r-min','r-costo','r-venta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('modal-rep-title').textContent = 'Nuevo repuesto';
+  window._editingRepuestoId = null;
 }
 
 function saveRepuesto() {
   const codigo = document.getElementById('r-codigo').value.trim();
   const desc   = document.getElementById('r-desc').value.trim();
+  const compat = document.getElementById('r-compat').value.trim();
   const cat    = document.getElementById('r-cat').value.trim();
   const stock  = parseInt(document.getElementById('r-stock').value) || 0;
-  const min    = parseInt(document.getElementById('r-min').value)   || 0;
+  const min    = parseInt(document.getElementById('r-min').value) || 0;
+  const costo  = parseInt(document.getElementById('r-costo').value) || 0;
   const venta  = parseInt(document.getElementById('r-venta').value) || 0;
-  if (!codigo || !desc || !cat || !venta) { toast('Completa los campos obligatorios', 'error'); return; }
 
-  if (state.editingRepuesto) {
-    const r = state.inventario.find(x => x.id === state.editingRepuesto);
-    Object.assign(r, { codigo, desc, cat, stock, min, costo: parseInt(document.getElementById('r-costo').value) || 0, venta });
+  if (!codigo || !desc || !cat || venta <= 0) { toast('Completa los campos obligatorios', 'error'); return; }
+
+  if (window._editingRepuestoId) {
+    const r = state.inventario.find(x => x.id === window._editingRepuestoId);
+    r.codigo = codigo; r.desc = desc; r.cat = cat; r.compat = compat;
+    r.stock = stock; r.min = min; r.costo = costo; r.venta = venta;
     toast('Repuesto actualizado', 'success');
-    state.editingRepuesto = null;
   } else {
-    if (state.inventario.find(r => r.codigo === codigo)) { toast('El código ya existe', 'error'); return; }
     const id = 'R' + String(state.nextIds.r++).padStart(3, '0');
-    state.inventario.push({ id, codigo, desc, cat, stock, min,
-      costo: parseInt(document.getElementById('r-costo').value) || 0, venta,
-    });
-    toast('Repuesto agregado', 'success');
+    state.inventario.push({ id, codigo, desc, cat, compat, stock, min, costo, venta });
+    toast('Repuesto registrado', 'success');
   }
   closeModal('modal-repuesto');
   refresh();
@@ -446,12 +479,14 @@ function editRepuesto(id) {
   document.getElementById('r-codigo').value = r.codigo;
   document.getElementById('r-desc').value   = r.desc;
   document.getElementById('r-cat').value    = r.cat;
+  document.getElementById('r-compat').value = r.compat || '';
   document.getElementById('r-stock').value  = r.stock;
   document.getElementById('r-min').value    = r.min;
-  document.getElementById('r-costo').value  = r.costo || '';
+  document.getElementById('r-costo').value  = r.costo || 0;
   document.getElementById('r-venta').value  = r.venta;
-  state.editingRepuesto = id;
+  
   document.getElementById('modal-rep-title').textContent = 'Editar repuesto';
+  window._editingRepuestoId = id;
   document.getElementById('modal-repuesto').classList.add('open');
 }
 
@@ -513,7 +548,13 @@ function renderVentas() {
 
 function renderPosCatalog() {
   const q = (document.getElementById('pos-search')?.value || '').toLowerCase();
-  const filtered = state.inventario.filter(r => r.desc.toLowerCase().includes(q) || r.codigo.toLowerCase().includes(q));
+  const qc = (document.getElementById('pos-compat-search')?.value || '').toLowerCase();
+  
+  const filtered = state.inventario.filter(r => {
+    const matchName = r.desc.toLowerCase().includes(q) || r.codigo.toLowerCase().includes(q);
+    const matchCompat = !qc || (r.compat && r.compat.toLowerCase().includes(qc));
+    return matchName && matchCompat;
+  });
   
   const container = document.getElementById('pos-catalog');
   if (!filtered.length) {
@@ -524,7 +565,7 @@ function renderPosCatalog() {
   container.innerHTML = filtered.map(r => {
     const bajo = r.stock <= r.min;
     return `
-      <div class="pos-item" onclick="addPosItem('${r.id}')">
+      <div class="pos-item" onclick="addToCart('${r.id}')">
         <div class="code">${r.codigo}</div>
         <div class="desc">${r.desc}</div>
         <div class="bottom">
@@ -536,19 +577,37 @@ function renderPosCatalog() {
   }).join('');
 }
 
-function addPosItem(id) {
+function addToCart(id) {
   const r = state.inventario.find(x => x.id === id);
   if (!r) return;
-  
+  if (r.stock <= 0) { toast('Sin stock disponible', 'error'); return; }
+
   const exist = posItems.find(i => i.id === id);
   if (exist) {
-    if (r.stock <= exist.qty) return toast('No hay más stock disponible', 'error');
+    if (exist.qty >= r.stock) { toast('No hay más stock disponible', 'error'); return; }
     exist.qty++;
   } else {
-    if (r.stock < 1) return toast('Stock agotado', 'error');
-    posItems.push({ id: r.id, desc: r.desc, precio: r.venta, qty: 1 });
+    posItems.push({ id: r.id, desc: r.desc, price: r.venta, qty: 1 });
   }
   renderPosCart();
+}
+
+function handleBarcode(e) {
+  if (e.key === 'Enter') {
+    const code = e.target.value.trim();
+    if (!code) return;
+
+    // Buscar por código exacto
+    const r = state.inventario.find(x => x.codigo.toLowerCase() === code.toLowerCase());
+    if (r) {
+      addToCart(r.id);
+      e.target.value = ''; // Limpiar para el siguiente escaneo
+      toast('Agregado: ' + r.desc);
+    } else {
+      toast('Código no encontrado: ' + code, 'error');
+      e.target.value = '';
+    }
+  }
 }
 
 function updatePosItemQty(id, delta) {

@@ -58,6 +58,10 @@ async function loadSampleData() {
     { id: 'R010', codigo: 'R010', desc: 'Bandas Freno Traseras AKT 125',     cat: 'Frenos',      stock: 12, min: 5, costo: 9000,   venta: 22000  },
     { id: 'R011', codigo: 'R011', desc: 'Cadena 428H Reforzada 132L',        cat: 'Transmisión', stock: 10, min: 3, costo: 22000,  venta: 48000  },
     { id: 'R012', codigo: 'R012', desc: 'Filtro Aire Discover 125 ST',       cat: 'Filtros',     stock: 8,  min: 3, costo: 11000,  venta: 24000  },
+    { id: 'R013', codigo: 'R013', desc: 'Llanta 90/90-18 Pistera',           cat: 'Llantas',     stock: 6,  min: 2, costo: 95000,  venta: 145000, compat: 'Boxer, NKD, RX115' },
+    { id: 'R014', codigo: 'R014', desc: 'Biela Motor Original Boxer',        cat: 'Motor',       stock: 3,  min: 1, costo: 65000,  venta: 98000,  compat: 'Boxer CT100, Boxer Platino' },
+    { id: 'R015', codigo: 'R015', desc: 'Kit Cilindro Completo NKD',         cat: 'Motor',       stock: 4,  min: 1, costo: 120000, venta: 185000, compat: 'AKT NKD 125, EVO NE' },
+    { id: 'R016', codigo: 'R016', desc: 'Rines de Aluminio 1.60x17 (Par)',   cat: 'Accesorios',  stock: 2,  min: 1, costo: 110000, venta: 165000, compat: 'Boxer, AX100, Viva R' },
   ];
 
   state.ventas = [
@@ -72,5 +76,5 @@ async function loadSampleData() {
     },
   ];
 
-  state.nextIds = { c: 4, m: 4, r: 13, f: 2 };
+  state.nextIds = { c: 4, m: 4, r: 17, f: 2 };
 }
