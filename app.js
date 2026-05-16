@@ -42,6 +42,7 @@ function refresh() {
   renderMotos();
   renderInventario();
   renderVentas();
+  checkCredits();
 }
 
 function updateBadges() {
@@ -51,6 +52,93 @@ function updateBadges() {
   if (bInv) {
     bInv.textContent    = lowStock;
     bInv.style.display  = lowStock  ? '' : 'none';
+  }
+}
+
+function checkCredits() {
+  const alertDiv = document.getElementById('alertas-credito');
+  if (!alertDiv) return;
+
+  const hoy = new Date().toISOString().split('T')[0];
+  const pendientes = state.ventas.filter(v => v.pago === 'Crédito' && v.estadoPago === 'Pendiente');
+  
+  if (pendientes.length === 0) {
+    alertDiv.innerHTML = '';
+    return;
+  }
+
+  const vencidos = pendientes.filter(v => v.fechaVencimiento <= hoy);
+  const proximos = pendientes.filter(v => v.fechaVencimiento > hoy && v.fechaVencimiento <= getNextDate(3));
+  
+  if (vencidos.length === 0 && proximos.length === 0) {
+    alertDiv.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+
+  // Bloque de Vencidos
+  if (vencidos.length > 0) {
+    html += `
+      <div style="background:rgba(255,107,107,0.1); border:1px solid var(--red); padding:15px; border-radius:12px; margin-bottom:15px">
+        <h4 style="margin:0 0 10px 0; color:var(--red)">⚠️ Cuentas VENCIDAS (${vencidos.length})</h4>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          ${vencidos.map(v => renderCreditRow(v, 'red')).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Bloque de Próximos
+  if (proximos.length > 0) {
+    html += `
+      <div style="background:rgba(255,165,0,0.1); border:1px solid var(--orange); padding:15px; border-radius:12px; margin-bottom:15px">
+        <h4 style="margin:0 0 10px 0; color:var(--orange)">⏳ Próximos a vencer (${proximos.length})</h4>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          ${proximos.map(v => renderCreditRow(v, 'orange')).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  alertDiv.innerHTML = html;
+}
+
+function renderCreditRow(v, color) {
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  const hoy = new Date().toISOString().split('T')[0];
+  const msgLabel = v.fechaVencimiento === hoy ? 'Vence HOY' : (v.fechaVencimiento < hoy ? 'Atrasado' : 'Vence pronto');
+  
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:10px; border-radius:8px; font-size:13px; border-left:4px solid var(--${color})">
+      <div>
+        <strong>${c ? c.nombre : 'Cliente Desconocido'}</strong> <br/>
+        <span style="color:var(--text3)">${msgLabel}: ${v.fechaVencimiento}</span>
+      </div>
+      <div style="display:flex; gap:5px; align-items:center">
+        <strong style="color:var(--${color}); margin-right:10px">${fmt(v.total)}</strong>
+        <button class="btn btn-primary btn-sm" style="background:#25D366; border:0" onclick="sendWhatsAppReminder('${v.id}')">📱 WA</button>
+        <button class="btn btn-primary btn-sm" style="background:#007AFF; border:0" onclick="sendSMSReminder('${v.id}')">💬 SMS</button>
+        <button class="btn btn-ghost btn-sm" onclick="marcarPagado('${v.id}')">✅</button>
+      </div>
+    </div>
+  `;
+}
+
+function getNextDate(days) {
+  const d = new Date();
+  // Usar mediodía para evitar problemas de zona horaria al cambiar de día
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function marcarPagado(ventaId) {
+  const v = state.ventas.find(x => x.id === ventaId);
+  if (v) {
+    v.estadoPago = 'Pagado';
+    toast('Cobro registrado exitosamente', 'success');
+    refresh();
   }
 }
 
@@ -110,8 +198,8 @@ function renderClientes() {
       <td>${c.ciudad || '–'}</td>
       <td><span class="badge badge-blue">${motoCount} moto${motoCount !== 1 ? 's' : ''}</span></td>
       <td>
-        ${currentUser?.role === 'Administrador' ? `
         <button class="btn btn-ghost btn-sm" onclick="editCliente('${c.id}')">✏️</button>
+        ${currentUser?.role === 'Administrador' ? `
         <button class="btn btn-danger btn-sm" onclick="deleteCliente('${c.id}')">🗑️</button>
         ` : ''}
       </td>
@@ -199,6 +287,7 @@ function renderMotos() {
       <td>${m.cc   || '–'}</td>
       <td>${c ? c.nombre : '–'}</td>
       <td>
+        <button class="btn btn-ghost btn-sm" onclick="editMoto('${m.id}')">✏️</button>
         ${currentUser?.role === 'Administrador' ? `
         <button class="btn btn-danger btn-sm" onclick="deleteMoto('${m.id}')">🗑️</button>
         ` : ''}
@@ -209,9 +298,8 @@ function renderMotos() {
 
 function clearMotoForm() {
   ['m-placa','m-marca','m-modelo','m-anio','m-cc','m-color','m-km'].forEach(id => document.getElementById(id).value = '');
-  const sel = document.getElementById('m-cliente');
-  sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
-  state.clientes.forEach(c => { sel.innerHTML += `<option value="${c.id}">${c.nombre}</option>`; });
+  document.getElementById('modal-moto-title').textContent = 'Nueva moto';
+  window._editingMotoId = null;
 }
 
 function saveMoto() {
@@ -221,16 +309,43 @@ function saveMoto() {
   const modelo    = document.getElementById('m-modelo').value.trim();
   if (!clienteId || !placa || !marca || !modelo) { toast('Completa los campos obligatorios', 'error'); return; }
 
-  const id = 'M' + String(state.nextIds.m++).padStart(3, '0');
-  state.motos.push({ id, clienteId, placa, marca, modelo,
-    anio:  document.getElementById('m-anio').value,
-    cc:    document.getElementById('m-cc').value,
-    color: document.getElementById('m-color').value,
-    km:    parseInt(document.getElementById('m-km').value) || 0,
-  });
-  toast('Moto registrada', 'success');
+  if (window._editingMotoId) {
+    const m = state.motos.find(x => x.id === window._editingMotoId);
+    m.clienteId = clienteId; m.placa = placa; m.marca = marca; m.modelo = modelo;
+    m.anio  = document.getElementById('m-anio').value;
+    m.cc    = document.getElementById('m-cc').value;
+    m.color = document.getElementById('m-color').value;
+    m.km    = parseInt(document.getElementById('m-km').value) || 0;
+    toast('Moto actualizada', 'success');
+  } else {
+    const id = 'M' + String(state.nextIds.m++).padStart(3, '0');
+    state.motos.push({ id, clienteId, placa, marca, modelo,
+      anio:  document.getElementById('m-anio').value,
+      cc:    document.getElementById('m-cc').value,
+      color: document.getElementById('m-color').value,
+      km:    parseInt(document.getElementById('m-km').value) || 0,
+    });
+    toast('Moto registrada', 'success');
+  }
   closeModal('modal-moto');
   refresh();
+}
+
+function editMoto(id) {
+  const m = state.motos.find(x => x.id === id);
+  populateSelects(); // Asegurar que los clientes están cargados
+  document.getElementById('m-cliente').value = m.clienteId;
+  document.getElementById('m-placa').value   = m.placa;
+  document.getElementById('m-marca').value   = m.marca;
+  document.getElementById('m-modelo').value  = m.modelo;
+  document.getElementById('m-anio').value    = m.anio  || '';
+  document.getElementById('m-cc').value      = m.cc    || '';
+  document.getElementById('m-color').value   = m.color || '';
+  document.getElementById('m-km').value      = m.km    || 0;
+  
+  document.getElementById('modal-moto-title').textContent = 'Editar moto';
+  window._editingMotoId = id;
+  document.getElementById('modal-moto').classList.add('open');
 }
 
 function deleteMoto(id) {
@@ -488,6 +603,17 @@ function renderPosCart() {
   document.getElementById('pos-total').textContent = fmt(rep + iva);
 }
 
+function onCobroClienteChange() {
+  const id = document.getElementById('cobro-cliente').value;
+  const inputTel = document.getElementById('cobro-tel');
+  if (id) {
+    const c = state.clientes.find(x => x.id === id);
+    if (c) inputTel.value = c.tel || '';
+  } else {
+    inputTel.value = '';
+  }
+}
+
 function openModalCobro() {
   if (!posItems.length) return toast('El carrito está vacío', 'error');
   
@@ -498,6 +624,7 @@ function openModalCobro() {
   document.getElementById('cobro-desc').value = '';
   document.getElementById('cobro-obs').value = '';
   document.getElementById('cobro-pago').value = 'Efectivo';
+  document.getElementById('cobro-tel').value = '';
   
   calcCobro();
   document.getElementById('modal-cobro').classList.add('open');
@@ -515,13 +642,45 @@ function savePosSale() {
   const iva = rep * 0.19;
   const desc = parseInt(document.getElementById('cobro-desc').value) || 0;
   const total = Math.max(0, rep + iva - desc);
+  const clienteId = document.getElementById('cobro-cliente').value || null;
+  const tel = document.getElementById('cobro-tel').value.trim();
   
   if (total <= 0 && rep <= 0) { toast('El total debe ser mayor a $0', 'error'); return; }
+
+  const pago = document.getElementById('cobro-pago').value;
+  const fechaPago = document.getElementById('cobro-fecha-pago').value;
+
+  if (pago === 'Crédito') {
+    if (!clienteId) {
+      toast('Para fiar debes seleccionar un cliente registrado', 'error');
+      return;
+    }
+    if (!fechaPago) {
+      toast('Debes elegir una fecha de pago para el crédito', 'error');
+      return;
+    }
+    if (!tel) {
+      toast('Se requiere el teléfono para los recordatorios', 'error');
+      return;
+    }
+  }
+
+  // Actualizar teléfono del cliente si se cambió
+  if (clienteId) {
+    const c = state.clientes.find(x => x.id === clienteId);
+    if (c && tel) c.tel = tel;
+  }
 
   // Descontar inventario
   for (let item of posItems) {
     const r = state.inventario.find(x => x.id === item.id);
     if (r) r.stock -= item.qty;
+  }
+
+
+  if (pago === 'Crédito' && !fechaPago) {
+    toast('Debes elegir una fecha de pago para el crédito', 'error');
+    return;
   }
 
   const id = 'FAC-' + String(state.nextIds.f++).padStart(3, '0');
@@ -530,9 +689,11 @@ function savePosSale() {
     clienteId: document.getElementById('cobro-cliente').value || null,
     items: [...posItems],
     rep, iva, desc, total,
-    pago:  document.getElementById('cobro-pago').value,
+    pago,
     obs:   document.getElementById('cobro-obs').value,
     fecha: new Date().toISOString().split('T')[0],
+    fechaVencimiento: pago === 'Crédito' ? fechaPago : null,
+    estadoPago: pago === 'Crédito' ? 'Pendiente' : 'Pagado'
   });
 
   posItems = [];
@@ -549,6 +710,34 @@ function deleteVenta(id) {
   if (!confirm('¿Eliminar esta factura?')) return;
   state.ventas = state.ventas.filter(v => v.id !== id);
   refresh();
+}
+
+function toggleFechaCredito() {
+  const pago = document.getElementById('cobro-pago').value;
+  const field = document.getElementById('field-fecha-pago');
+  if (field) field.style.display = (pago === 'Crédito') ? 'block' : 'none';
+}
+
+function sendWhatsAppReminder(ventaId) {
+  const v = state.ventas.find(x => x.id === ventaId);
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  if (!c || !c.tel) return toast('El cliente no tiene teléfono registrado', 'error');
+
+  const tel = c.tel.replace(/\D/g,'');
+  const msg = encodeURIComponent(`Hola ${c.nombre}, te saludamos de MotoTaller. Te recordamos amablemente que tienes un saldo pendiente de ${fmt(v.total)} que vence el ${v.fechaVencimiento}. ¡Gracias!`);
+  window.open(`https://wa.me/57${tel}?text=${msg}`, '_blank');
+}
+
+function sendSMSReminder(ventaId) {
+  const v = state.ventas.find(x => x.id === ventaId);
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  if (!c || !c.tel) return toast('El cliente no tiene teléfono registrado', 'error');
+
+  const tel = c.tel.replace(/\D/g,'');
+  const msg = `Hola ${c.nombre}, te recordamos tu saldo pendiente en MotoTaller por ${fmt(v.total)} que vence el ${v.fechaVencimiento}.`;
+  
+  // Abrir app de SMS nativa
+  window.location.href = `sms:+57${tel}?body=${encodeURIComponent(msg)}`;
 }
 
 function imprimirFactura(id) {

@@ -108,7 +108,9 @@
 
       <!-- ── DASHBOARD ── -->
       <div class="page active" id="page-dashboard">
-        <div class="stat-grid">
+        <div id="alertas-credito"></div>
+
+      <div class="stat-grid">
           <div class="stat-card orange">
             <div class="label">Ventas del mes</div>
             <div class="value" id="dash-ventas">$0</div>
@@ -321,7 +323,7 @@
 <div class="modal-overlay" id="modal-moto">
   <div class="modal">
     <div class="modal-header">
-      <h3>Registrar moto</h3>
+      <h3 id="modal-moto-title">Registrar moto</h3>
       <button class="close-btn" onclick="closeModal('modal-moto')">✕</button>
     </div>
     <div class="modal-body">
@@ -389,15 +391,23 @@
       </div>
       <div class="form-grid">
         <div class="field"><label>Cliente (Opcional)</label>
-          <select id="cobro-cliente"><option value="">Venta Directa / Mostrador</option></select>
+          <select id="cobro-cliente" onchange="onCobroClienteChange()"><option value="">Venta Directa / Mostrador</option></select>
+        </div>
+        <div class="field" id="field-cobro-tel">
+          <label>Teléfono Cliente</label>
+          <input id="cobro-tel" type="tel" class="search-bar" placeholder="Ej: 315 234 5678"/>
         </div>
         <div class="field"><label>Forma de pago</label>
-          <select id="cobro-pago">
+          <select id="cobro-pago" onchange="toggleFechaCredito()">
             <option>Efectivo</option>
             <option>Transferencia</option>
             <option>Nequi / Daviplata</option>
             <option>Crédito</option>
           </select>
+        </div>
+        <div class="field" id="field-fecha-pago" style="display:none">
+          <label>Fecha prometida de pago</label>
+          <input id="cobro-fecha-pago" type="date" class="search-bar"/>
         </div>
         <div class="field"><label>Descuento total (COP)</label>
           <input id="cobro-desc" type="number" placeholder="0" oninput="calcCobro()"/>
