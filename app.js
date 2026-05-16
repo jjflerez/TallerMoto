@@ -1,6 +1,7 @@
 /* ============================================================
    app.js  –  Lógica principal de la aplicación
    ============================================================ */
+const MORA_DIARIA = 1000; // Valor de la mora por día de retraso (COP)
 
 /* ── Navegación ─────────────────────────────────────────────── */
 
@@ -16,6 +17,7 @@ function showPage(name, btn) {
     motos:      'Motos registradas',
     inventario: 'Inventario',
     ventas:     'Ventas y facturación',
+    usuarios:   'Gestión de Usuarios',
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
   
@@ -29,6 +31,18 @@ function showPage(name, btn) {
       const inp = document.getElementById('pos-barcode-input');
       if (inp) inp.focus();
     }, 300);
+  }
+
+  if (name === 'usuarios') {
+    if (typeof renderUsuarios === 'function') {
+      renderUsuarios();
+    }
+  }
+
+  if (name === 'ventas') {
+    setTimeout(() => {
+      document.getElementById('pos-barcode-input')?.focus();
+    }, 100);
   }
 
   refresh();
@@ -47,6 +61,8 @@ function refresh() {
   updateBadges();
   renderDashboard();
   renderClientes();
+  renderMotos();
+  renderInventario();
   renderVentas();
   checkCredits();
   inyectarNuevosProductos();
@@ -85,13 +101,48 @@ function updateBadges() {
   }
 }
 
-function checkCredits() {
+function renderDashboard() {
   const alertDiv = document.getElementById('alertas-credito');
   if (!alertDiv) return;
 
   const hoy = new Date().toISOString().split('T')[0];
-  const pendientes = state.ventas.filter(v => v.pago === 'Crédito' && v.estadoPago === 'Pendiente');
+  const mesActual = hoy.substring(0, 7); // YYYY-MM
   
+  const ventasMes = state.ventas.filter(v => v.fecha.startsWith(mesActual));
+  const totalMes = ventasMes.reduce((s, v) => s + v.total, 0);
+  
+  // Actualizar Cards
+  const dVent = document.getElementById('dash-ventas');
+  const dVentSub = document.getElementById('dash-ventas-sub');
+  const dCli = document.getElementById('dash-clientes');
+  const dStock = document.getElementById('dash-stock');
+
+  if (dVent) dVent.textContent = fmt(totalMes);
+  if (dVentSub) dVentSub.textContent = `${ventasMes.length} facturas este mes`;
+  if (dCli) dCli.textContent = state.clientes.length;
+
+  const bajoStock = state.inventario.filter(r => r.stock <= r.min);
+  if (dStock) dStock.textContent = bajoStock.length;
+
+  // Alertas de Stock
+  const alertInv = document.getElementById('dash-alertas');
+  if (alertInv) {
+    if (bajoStock.length === 0) {
+      alertInv.innerHTML = '<div class="empty-state"><div class="icon">✅</div>Todo el stock está al día</div>';
+    } else {
+      alertInv.innerHTML = bajoStock.map(r => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,65,108,0.05); padding:12px; border-radius:10px; margin-bottom:8px; border:1px solid rgba(255,65,108,0.2)">
+          <div>
+            <div style="font-weight:700; color:var(--red)">${r.desc}</div>
+            <div style="font-size:11px; color:var(--text3)">Quedan solo ${r.stock} unidades</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('inventario'); editRepuesto('${r.id}')">Pedir</button>
+        </div>
+      `).join('');
+    }
+  }
+
+  const pendientes = state.ventas.filter(v => v.pago === 'Crédito' && v.estadoPago !== 'Pagado');
   if (pendientes.length === 0) {
     alertDiv.innerHTML = '';
     return;
@@ -139,17 +190,28 @@ function renderCreditRow(v, color) {
   const hoy = new Date().toISOString().split('T')[0];
   const msgLabel = v.fechaVencimiento === hoy ? 'Vence HOY' : (v.fechaVencimiento < hoy ? 'Atrasado' : 'Vence pronto');
   
+  let totalMora = 0;
+  let dias = 0;
+  if (v.fechaVencimiento < hoy) {
+    const diffTime = Math.abs(new Date(hoy) - new Date(v.fechaVencimiento));
+    dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    totalMora = dias * MORA_DIARIA;
+  }
+  const totalActual = v.total + totalMora;
+
   return `
     <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:10px; border-radius:8px; font-size:13px; border-left:4px solid var(--${color})">
-      <div>
+      <div style="flex:1">
         <strong>${c ? c.nombre : 'Cliente Desconocido'}</strong> <br/>
-        <span style="color:var(--text3)">${msgLabel}: ${v.fechaVencimiento}</span>
+        <span style="color:var(--text3)">${msgLabel}: ${v.fechaVencimiento} ${dias > 0 ? `(${dias}d de mora)` : ''}</span>
       </div>
       <div style="display:flex; gap:5px; align-items:center">
-        <strong style="color:var(--${color}); margin-right:10px">${fmt(v.total)}</strong>
-        <button class="btn btn-primary btn-sm" style="background:#25D366; border:0" onclick="sendWhatsAppReminder('${v.id}')">📱 WA</button>
-        <button class="btn btn-primary btn-sm" style="background:#007AFF; border:0" onclick="sendSMSReminder('${v.id}')">💬 SMS</button>
-        <button class="btn btn-ghost btn-sm" onclick="marcarPagado('${v.id}')">✅</button>
+        <div style="text-align:right; margin-right:10px">
+          <strong style="color:var(--${color}); display:block">${fmt(totalActual)}</strong>
+          ${totalMora > 0 ? `<small style="font-size:10px; color:var(--text3)">Base: ${fmt(v.total)}</small>` : ''}
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#25D366; border:0" onclick="sendWhatsAppReminder('${v.id}', ${totalActual}, ${dias})">📱 WA</button>
+        ${currentUser?.role !== 'Administrador' ? `<button class="btn btn-ghost btn-sm" onclick="marcarPagado('${v.id}')">✅</button>` : ''}
       </div>
     </div>
   `;
@@ -157,8 +219,6 @@ function renderCreditRow(v, color) {
 
 function getNextDate(days) {
   const d = new Date();
-  // Usar mediodía para evitar problemas de zona horaria al cambiar de día
-  d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
 }
@@ -169,40 +229,6 @@ function marcarPagado(ventaId) {
     v.estadoPago = 'Pagado';
     toast('Cobro registrado exitosamente', 'success');
     refresh();
-  }
-}
-
-/* ── Dashboard ──────────────────────────────────────────────── */
-
-function renderDashboard() {
-  const totalV    = state.ventas.reduce((s, v) => s + v.total, 0);
-  const lowStock  = state.inventario.filter(r => r.stock <= r.min).length;
-
-  document.getElementById('dash-ventas').textContent     = fmt(totalV);
-  document.getElementById('dash-ventas-sub').textContent = state.ventas.length + ' facturas emitidas';
-  document.getElementById('dash-clientes').textContent   = state.clientes.length;
-  document.getElementById('dash-stock').textContent      = lowStock;
-
-  /* Alertas de stock */
-  const alertDiv = document.getElementById('dash-alertas');
-  const alerts   = state.inventario.filter(r => r.stock <= r.min);
-  if (!alerts.length) {
-    alertDiv.innerHTML = '<div class="empty-state"><div class="icon">✅</div>Todo en orden</div>';
-  } else {
-    alertDiv.innerHTML = alerts.map(r => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:600">${r.desc}</div>
-          <div style="font-size:11px;color:var(--text3)">${r.codigo} · ${r.cat}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="text-align:right">
-            <span class="badge badge-red">Stock: ${r.stock}</span>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Mín: ${r.min}</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="editRepuesto('${r.id}')" title="Actualizar stock">✏️</button>
-        </div>
-      </div>`).join('');
   }
 }
 
@@ -238,16 +264,25 @@ function renderClientes() {
 }
 
 function openModal(id) {
-  document.getElementById(id).classList.add('open');
-  if (id === 'modal-cliente')  { clearClienteForm();  populateSelects(); }
+  const modal = document.getElementById(id);
+  if (!modal) return;
+
+  // Limpieza inteligente según el modal
+  if (id === 'modal-cliente')  { clearClienteForm(); }
   if (id === 'modal-moto')     { clearMotoForm();      populateSelects(); }
   if (id === 'modal-repuesto') { clearRepuestoForm(); }
   if (id === 'modal-factura')  { clearFacturaForm();   populateSelects(); }
+  if (id === 'modal-usuario')  { clearUsuarioForm(); }
+  
+  modal.classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 function clearClienteForm() {
-  ['c-nombre','c-cedula','c-tel','c-ciudad','c-email'].forEach(id => document.getElementById(id).value = '');
+  ['c-nombre','c-cedula','c-tel','c-ciudad','c-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
   document.getElementById('modal-cliente-title').textContent = 'Nuevo cliente';
   window._editingClienteId = null;
 }
@@ -404,35 +439,34 @@ function renderInventario() {
     (!cat || r.cat === cat)
   );
   const tb = document.getElementById('tabla-inv');
+  if (!tb) return;
   if (!filtered.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📦</div>Sin repuestos</div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📦</div>Sin repuestos</div></td></tr>`;
     return;
   }
   tb.innerHTML = filtered.map(r => {
     const bajo = r.stock <= r.min;
     const pct  = Math.min(100, Math.round(r.stock / Math.max(r.min * 2, 1) * 100));
     return `<tr>
-      <td><span class="tag">${r.codigo}</span></td>
+      <td><span class="tag">#${r.codigo}</span></td>
       <td><strong>${r.desc}</strong></td>
+      <td style="font-size:11px;color:var(--text2)">${r.compat || '–'}</td>
       <td><span class="badge badge-gray">${r.cat}</span></td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <strong style="color:${bajo ? 'var(--red)' : 'var(--text)'}">${r.stock}</strong>
-          <div class="progress" style="width:60px">
-            <div class="progress-bar" style="width:${pct}%;background:${bajo ? 'var(--red)' : 'var(--green)'}"></div>
-          </div>
+          <span class="badge ${bajo ? 'badge-red' : 'badge-green'}">${r.stock}</span>
         </div>
       </td>
       <td>${r.min}</td>
-      <td>${r.costo ? fmt(r.costo) : '–'}</td>
-      <td><strong>${fmt(r.venta)}</strong></td>
+      <td>${fmt(r.costo)}</td>
+      <td><strong style="color:var(--orange)">${fmt(r.venta)}</strong></td>
       <td>${bajo
-        ? '<span class="badge badge-red">⚠ Stock bajo</span>'
-        : '<span class="badge badge-green">OK</span>'}</td>
+        ? '<span class="badge badge-red">⚠️ Pedir</span>'
+        : '<span class="badge badge-green">✅ Ok</span>'}</td>
       <td>
-        <button class="btn btn-ghost btn-sm" onclick="editRepuesto('${r.id}')" title="Editar / Actualizar stock">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="editRepuesto('${r.id}')">✏️</button>
         ${currentUser?.role === 'Administrador' ? `
-        <button class="btn btn-danger btn-sm" onclick="deleteRepuesto('${r.id}')" title="Eliminar">🗑️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRepuesto('${r.id}')">🗑️</button>
         ` : ''}
       </td>
     </tr>`;
@@ -566,12 +600,11 @@ function renderPosCatalog() {
     const bajo = r.stock <= r.min;
     return `
       <div class="pos-item" onclick="addToCart('${r.id}')">
-        <div class="code">${r.codigo}</div>
+        <div class="code">#${r.codigo}</div>
         <div class="desc">${r.desc}</div>
-        <div class="bottom">
-          <div class="price">${fmt(r.venta)}</div>
-          <div class="stock" style="color:${bajo ? 'var(--red)' : 'var(--text2)'}">Stock: ${r.stock}</div>
-        </div>
+        <div style="font-size:10px; color:var(--text3); margin-top:4px">${r.compat || 'Universal'}</div>
+        <div class="price">${fmt(r.venta)}</div>
+        <div class="stock" style="margin-top:8px">${r.stock > 0 ? `Stock: ${r.stock}` : '<span style="color:var(--red)">Agotado</span>'}</div>
       </div>
     `;
   }).join('');
@@ -580,14 +613,24 @@ function renderPosCatalog() {
 function addToCart(id) {
   const r = state.inventario.find(x => x.id === id);
   if (!r) return;
-  if (r.stock <= 0) { toast('Sin stock disponible', 'error'); return; }
+  
+  if (r.stock <= 0) {
+    return toast('Este producto está agotado', 'error');
+  }
 
-  const exist = posItems.find(i => i.id === id);
-  if (exist) {
-    if (exist.qty >= r.stock) { toast('No hay más stock disponible', 'error'); return; }
-    exist.qty++;
+  const existing = posItems.find(x => x.id === id);
+  if (existing) {
+    if (existing.qty >= r.stock) {
+      return toast('No hay más stock disponible', 'warning');
+    }
+    existing.qty++;
   } else {
-    posItems.push({ id: r.id, desc: r.desc, price: r.venta, qty: 1 });
+    posItems.push({ 
+      id: r.id, 
+      desc: r.desc, 
+      price: r.venta, // Unificado a 'price'
+      qty: 1 
+    });
   }
   renderPosCart();
 }
@@ -644,7 +687,7 @@ function renderPosCart() {
     <div class="pos-cart-item">
       <div class="info">
         <div class="desc">${item.desc}</div>
-        <div class="price">${fmt(item.precio)}</div>
+        <div class="price">${fmt(item.price)}</div>
       </div>
       <div class="controls">
         <button class="btn-qty" onclick="updatePosItemQty('${item.id}', -1)">-</button>
@@ -655,7 +698,7 @@ function renderPosCart() {
     </div>
   `).join('');
 
-  const rep = posItems.reduce((s, i) => s + (i.qty * i.precio), 0);
+  const rep = posItems.reduce((s, i) => s + (i.qty * i.price), 0);
   const iva = rep * 0.19;
   document.getElementById('pos-subtotal').textContent = fmt(rep);
   document.getElementById('pos-iva').textContent = fmt(iva);
@@ -690,14 +733,14 @@ function openModalCobro() {
 }
 
 function calcCobro() {
-  const rep = posItems.reduce((s, i) => s + (i.qty * i.precio), 0);
+  const rep = posItems.reduce((s, i) => s + (i.qty * i.price), 0);
   const iva = rep * 0.19;
   const desc = parseInt(document.getElementById('cobro-desc').value) || 0;
   document.getElementById('cobro-total-view').textContent = fmt(Math.max(0, rep + iva - desc));
 }
 
 function savePosSale() {
-  const rep = posItems.reduce((s, i) => s + (i.qty * i.precio), 0);
+  const rep = posItems.reduce((s, i) => s + (i.qty * i.price), 0);
   const iva = rep * 0.19;
   const desc = parseInt(document.getElementById('cobro-desc').value) || 0;
   const total = Math.max(0, rep + iva - desc);
@@ -777,14 +820,19 @@ function toggleFechaCredito() {
   if (field) field.style.display = (pago === 'Crédito') ? 'block' : 'none';
 }
 
-function sendWhatsAppReminder(ventaId) {
+function sendWhatsAppReminder(ventaId, totalConMora = null, dias = 0) {
   const v = state.ventas.find(x => x.id === ventaId);
   const c = state.clientes.find(x => x.id === v.clienteId);
   if (!c || !c.tel) return toast('El cliente no tiene teléfono registrado', 'error');
 
   const tel = c.tel.replace(/\D/g,'');
-  const msg = encodeURIComponent(`Hola ${c.nombre}, te saludamos de MotoTaller. Te recordamos amablemente que tienes un saldo pendiente de ${fmt(v.total)} que vence el ${v.fechaVencimiento}. ¡Gracias!`);
-  window.open(`https://wa.me/57${tel}?text=${msg}`, '_blank');
+  let texto = `Hola ${c.nombre}, te saludamos de MotoTaller. Te recordamos amablemente que tienes un saldo pendiente de ${fmt(v.total)} que venció el ${v.fechaVencimiento}. ¡Gracias!`;
+  
+  if (totalConMora && dias > 0) {
+    texto = `Hola ${c.nombre}, te saludamos de MotoTaller. Tu pago de ${fmt(v.total)} presenta ${dias} días de retraso. El total a pagar hoy con intereses de mora es de ${fmt(totalConMora)}. Por favor acercarse al taller para ponerse al día.`;
+  }
+
+  window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(texto)}`, '_blank');
 }
 
 function sendSMSReminder(ventaId) {
@@ -957,7 +1005,8 @@ function populateSelects() {
 /* ── Utilidades ─────────────────────────────────────────────── */
 
 function fmt(n) {
-  return '$' + Math.round(n).toLocaleString('es-CO');
+  const val = parseFloat(n) || 0;
+  return '$' + Math.round(val).toLocaleString('es-CO');
 }
 
 function estadoBadge(estado) {

@@ -67,22 +67,25 @@
       <span>Sistema de Ventas</span>
     </div>
     <div class="nav-section">Principal</div>
-    <button class="nav-item active" onclick="showPage('dashboard',this)">
+    <button class="nav-item active" onclick="showPage('dashboard',this)" id="nav-dashboard">
       <span class="nav-icon">📊</span> Dashboard
     </button>
     <div class="nav-section">Gestión</div>
-    <button class="nav-item" onclick="showPage('clientes',this)">
+    <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes">
       <span class="nav-icon">👤</span> Clientes
     </button>
-    <button class="nav-item" onclick="showPage('motos',this)">
+    <button class="nav-item" onclick="showPage('motos',this)" id="nav-motos">
       <span class="nav-icon">🏍️</span> Motos
     </button>
-    <button class="nav-item" onclick="showPage('inventario',this)">
+    <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario">
       <span class="nav-icon">📦</span> Inventario
       <span class="badge" id="badge-inv" style="display:none">0</span>
     </button>
-    <button class="nav-item" onclick="showPage('ventas',this)">
+    <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas">
       <span class="nav-icon">🧾</span> Ventas
+    </button>
+    <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none">
+      <span class="nav-icon">👥</span> Usuarios
     </button>
     <div class="sidebar-footer">
       <div id="sidebar-user-name" style="font-weight:600;color:var(--text2);margin-bottom:2px">–</div>
@@ -110,7 +113,7 @@
       <div class="page active" id="page-dashboard">
         <div id="alertas-credito"></div>
 
-      <div class="stat-grid">
+        <div class="stat-grid">
           <div class="stat-card orange">
             <div class="label">Ventas del mes</div>
             <div class="value" id="dash-ventas">$0</div>
@@ -204,7 +207,7 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Código</th><th>Descripción</th><th>Categoría</th>
+                <th>Código</th><th>Descripción</th><th>Compatibilidad</th><th>Categoría</th>
                 <th>Stock</th><th>Stock Mín.</th><th>P. Costo</th>
                 <th>P. Venta</th><th>Estado</th><th>Acciones</th>
               </tr></thead>
@@ -214,9 +217,26 @@
         </div>
       </div>
 
+      <!-- ── USUARIOS ── -->
+      <div class="page" id="page-usuarios">
+        <div class="section-header">
+          <h3>Gestión de Usuarios</h3>
+          <button class="btn btn-primary" onclick="openModal('modal-usuario')">+ Nuevo Usuario</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Usuario</th><th>Rol</th><th>Contraseña</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tabla-usuarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       <!-- ── VENTAS ── -->
-      <div class="page" id="page-ventas" style="display:none; height:100%; display:flex; flex-direction:column">
+      <div class="page" id="page-ventas">
         <!-- Pestañas POS / Historial -->
         <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-shrink:0;align-items:center">
           <button class="btn btn-primary" id="btn-tab-pos" onclick="switchVentasTab('pos')">🛒 Punto de Venta</button>
@@ -483,6 +503,39 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-cierre')">Cerrar</button>
       <button class="btn btn-primary" onclick="imprimirCierre()">🖨️ Imprimir Cierre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Usuario (Admin Only) -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <h3 id="modal-user-title">Nuevo Usuario</h3>
+      <button class="close-btn" onclick="closeModal('modal-usuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div class="field">
+          <label>Nombre de Usuario *</label>
+          <input id="u-user" placeholder="ej: mecanico1"/>
+        </div>
+        <div class="field">
+          <label>Contraseña *</label>
+          <input type="password" id="u-pass" placeholder="****"/>
+        </div>
+        <div class="field">
+          <label>Rol de Usuario *</label>
+          <select id="u-role" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text)">
+            <option value="Empleado">Empleado (Solo ventas)</option>
+            <option value="Administrador">Administrador (Acceso total)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUsuario()">Guardar Usuario</button>
     </div>
   </div>
 </div>

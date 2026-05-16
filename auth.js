@@ -55,6 +55,29 @@ function doLogin() {
 
     /* Cargar datos iniciales */
     await loadSampleData();
+    
+    /* FILTRO DE MENÚ POR ROL */
+    const isAdmin = found.role === 'Administrador';
+    
+    // El Admin ve la gestión de usuarios
+    document.getElementById('nav-usuarios').style.display   = isAdmin ? 'block' : 'none';
+    
+    // Todos ven Dashboard, Inventario, Clientes y Motos
+    document.getElementById('nav-dashboard').style.display  = 'block';
+    document.getElementById('nav-inventario').style.display = 'block';
+    document.getElementById('nav-clientes').style.display   = 'block';
+    document.getElementById('nav-motos').style.display      = 'block';
+    
+    // El Vendedor ve el POS (Ventas), el Admin también si lo desea (lo dejaré visible para ambos)
+    document.getElementById('nav-ventas').style.display     = isAdmin ? 'none' : 'block';
+
+    // Redirigir a la página correspondiente
+    if (isAdmin) {
+      showPage('dashboard', document.getElementById('nav-dashboard'));
+    } else {
+      showPage('ventas', document.getElementById('nav-ventas'));
+    }
+
     refresh();
   }, 400);
 }
@@ -94,6 +117,21 @@ async function restoreSession() {
       document.getElementById('sidebar-user-role').textContent = currentUser.role;
 
       await loadSampleData();
+
+      /* FILTRO DE MENÚ POR ROL */
+      const isAdmin = currentUser.role === 'Administrador';
+      
+      document.getElementById('nav-usuarios').style.display   = isAdmin ? 'block' : 'none';
+      document.getElementById('nav-dashboard').style.display  = 'block';
+      document.getElementById('nav-inventario').style.display = 'block';
+      document.getElementById('nav-ventas').style.display     = isAdmin ? 'none' : 'block';
+
+      if (isAdmin) {
+        showPage('dashboard', document.getElementById('nav-dashboard'));
+      } else {
+        showPage('ventas', document.getElementById('nav-ventas'));
+      }
+
       refresh();
     } catch(e) {
       localStorage.removeItem('motoTallerUser');
@@ -169,6 +207,91 @@ function forgotPassword() {
   } else if (input !== null) {
     alert("Clave Maestra incorrecta. No se puede recuperar la contraseña.");
   }
+}
+
+/* ── Gestión de Usuarios (Admin) ─────────────────────────── */
+
+function renderUsuarios() {
+  const tb = document.getElementById('tabla-usuarios');
+  if (!tb) return;
+
+  tb.innerHTML = USERS.map(u => `
+    <tr>
+      <td><strong>${u.user}</strong><br><small>${u.name || ''}</small></td>
+      <td><span class="badge ${u.role === 'Administrador' ? 'badge-red' : 'badge-gray'}">${u.role}</span></td>
+      <td><code>${u.pass}</code></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editUsuario('${u.user}')">✏️</button>
+        ${u.user !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUsuario('${u.user}')">🗑️</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function clearUsuarioForm() {
+  document.getElementById('u-user').value = '';
+  document.getElementById('u-pass').value = '';
+  document.getElementById('u-role').value = 'Empleado';
+  document.getElementById('modal-user-title').textContent = 'Nuevo Usuario';
+  window._editingUserId = null;
+  document.getElementById('u-user').disabled = false;
+}
+
+function editUsuario(username) {
+  const u = USERS.find(x => x.user === username);
+  if (!u) return;
+
+  document.getElementById('u-user').value = u.user;
+  document.getElementById('u-pass').value = u.pass;
+  document.getElementById('u-role').value = u.role;
+  
+  document.getElementById('modal-user-title').textContent = 'Editar Usuario';
+  window._editingUserId = username;
+  
+  // No permitimos renombrar al 'admin' principal, pero sí a los demás
+  document.getElementById('u-user').disabled = (username === 'admin'); 
+  
+  document.getElementById('modal-usuario').classList.add('open');
+}
+
+function saveUsuario() {
+  const user = document.getElementById('u-user').value.trim().toLowerCase();
+  const pass = document.getElementById('u-pass').value.trim();
+  const role = document.getElementById('u-role').value;
+
+  if (!user || !pass) return toast('Completa los campos obligatorios', 'error');
+
+  if (window._editingUserId) {
+    const u = USERS.find(x => x.user === window._editingUserId);
+    if (u) {
+      // Si cambió el nombre, verificamos que el nuevo no exista ya
+      if (user !== window._editingUserId && USERS.find(x => x.user === user)) {
+        return toast('El nuevo nombre de usuario ya está en uso', 'error');
+      }
+      u.user = user;
+      u.pass = pass;
+      u.role = role;
+      toast('Usuario actualizado', 'success');
+    }
+  } else {
+    if (USERS.find(x => x.user === user)) return toast('El nombre de usuario ya existe', 'error');
+    USERS.push({ user, pass, role, name: user });
+    toast('Usuario creado exitosamente', 'success');
+  }
+
+  localStorage.setItem('motoTallerUsersList', JSON.stringify(USERS));
+  closeModal('modal-usuario');
+  renderUsuarios();
+}
+
+function deleteUsuario(username) {
+  if (username === 'admin') return;
+  if (!confirm('¿Seguro que deseas eliminar al usuario ' + username + '?')) return;
+  
+  USERS = USERS.filter(x => x.user !== username);
+  localStorage.setItem('motoTallerUsersList', JSON.stringify(USERS));
+  renderUsuarios();
+  toast('Usuario eliminado', 'success');
 }
 
 if (document.readyState === 'loading') {
