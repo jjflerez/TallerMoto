@@ -102,8 +102,10 @@
     <div class="topbar">
       <div class="mobile-menu-btn" onclick="toggleSidebar()">☰</div>
       <h2 id="topbar-title">Dashboard</h2>
-      <div class="topbar-right">
-        <input class="search-bar" placeholder="Buscar..." id="global-search"/>
+      <div class="topbar-right" style="position:relative">
+        <span style="color:var(--text3); font-size:12px; margin-right:8px">Buscar en todo:</span>
+        <input class="search-bar" style="width:300px" placeholder="Placa, Cliente o Repuesto..." id="global-search" oninput="handleGlobalSearch()"/>
+        <div id="global-search-results" class="card" style="position:absolute; top:50px; right:0; width:400px; z-index:1000; display:none; padding:10px; max-height:400px; overflow-y:auto"></div>
       </div>
     </div>
 
@@ -130,13 +132,22 @@
             <div class="sub">Repuestos bajo mínimo</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr;gap:20px">
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px">
           <div class="card">
             <div class="section-header" style="margin-bottom:12px">
-              <h3>Alertas de inventario</h3>
+              <h3>⚠️ Alertas de Inventario Crítico</h3>
             </div>
             <div id="dash-alertas">
-              <div class="empty-state"><div class="icon">📦</div>Sin alertas</div>
+              <div class="empty-state"><div class="icon">📦</div>Todo en orden</div>
+            </div>
+          </div>
+          
+          <div class="card" style="background:var(--orange-dim); border-color:var(--orange)">
+            <div class="section-header" style="margin-bottom:12px">
+              <h3 style="color:var(--orange)">💡 Business Intelligence</h3>
+            </div>
+            <div id="dash-insights" style="font-size:13px; line-height:1.6">
+              <!-- Insights generados por código -->
             </div>
           </div>
         </div>
@@ -536,6 +547,34 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-usuario')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveUsuario()">Guardar Usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Hoja de Vida (Historial Moto) -->
+<div class="modal-overlay" id="modal-hoja-vida">
+  <div class="modal" style="width:700px">
+    <div class="modal-header">
+      <h3 id="hj-placa-title">Hoja de Vida: ---</h3>
+      <button class="close-btn" onclick="closeModal('modal-hoja-vida')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Factura</th>
+              <th>Detalle / Repuestos</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-hoja-vida"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-hoja-vida')">Cerrar</button>
     </div>
   </div>
 </div>

@@ -66,6 +66,7 @@ function refresh() {
   renderVentas();
   checkCredits();
   inyectarNuevosProductos();
+  renderInsights();
 }
 
 function inyectarNuevosProductos() {
@@ -352,10 +353,13 @@ function renderMotos() {
       <td>${m.cc   || '–'}</td>
       <td>${c ? c.nombre : '–'}</td>
       <td>
-        <button class="btn btn-ghost btn-sm" onclick="editMoto('${m.id}')">✏️</button>
-        ${currentUser?.role === 'Administrador' ? `
-        <button class="btn btn-danger btn-sm" onclick="deleteMoto('${m.id}')">🗑️</button>
-        ` : ''}
+        <div style="display:flex; gap:4px">
+          <button class="btn btn-primary btn-sm" onclick="verHojaDeVida('${m.placa}')" title="Ver Historial / Hoja de Vida">📋 Historia</button>
+          <button class="btn btn-ghost btn-sm" onclick="editMoto('${m.id}')">✏️</button>
+          ${currentUser?.role === 'Administrador' ? `
+          <button class="btn btn-danger btn-sm" onclick="deleteMoto('${m.id}')">🗑️</button>
+          ` : ''}
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -850,56 +854,66 @@ function sendSMSReminder(ventaId) {
 function imprimirFactura(id) {
   const v = state.ventas.find(x => x.id === id);
   const c = state.clientes.find(x => x.id === v.clienteId);
+  
+  // Generar un CUFE ficticio pero realista para el diseño
+  const cufe = Array.from({length:40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=Factura:${v.id}|Total:${v.total}|CUFE:${cufe}`;
 
   const html = `
-    <div style="text-align:center;margin-bottom:10px">
-      <h2 style="margin:0;font-size:18px">MotoTaller</h2>
-      <div style="font-size:12px">Sistema de Ventas</div>
-      <div style="font-size:12px;margin-top:4px">----------------------</div>
-    </div>
-    <div style="font-size:12px;margin-bottom:10px">
-      <div><strong>Factura N°:</strong> ${v.id}</div>
-      <div><strong>Fecha:</strong> ${v.fecha}</div>
-      <div><strong>Cliente:</strong> ${c ? c.nombre : 'Venta directa'}</div>
-      ${c && c.cedula ? `<div><strong>CC/NIT:</strong> ${c.cedula}</div>` : ''}
-    </div>
-    <div style="font-size:12px;margin-bottom:10px">----------------------</div>
-    <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px">
-      <tr>
-        <th style="text-align:left;padding-bottom:4px">Cant. Concepto</th>
-        <th style="text-align:right;padding-bottom:4px">Total</th>
-      </tr>
-      ${(v.items || []).map(item => `
-      <tr>
-        <td style="padding:4px 0">${item.qty}x ${item.desc}</td>
-        <td style="padding:4px 0;text-align:right">${fmt(item.qty * item.precio)}</td>
-      </tr>
-      `).join('')}
-      ${v.desc ? `
-      <tr>
-        <td style="padding:4px 0">Descuento</td>
-        <td style="padding:4px 0;text-align:right">- ${fmt(v.desc)}</td>
-      </tr>` : ''}
-      <tr>
-        <td style="padding:4px 0">Subtotal</td>
-        <td style="padding:4px 0;text-align:right">${fmt(v.rep)}</td>
-      </tr>
-      <tr>
-        <td style="padding:4px 0">IVA (19%)</td>
-        <td style="padding:4px 0;text-align:right">${fmt(v.iva || 0)}</td>
-      </tr>
-    </table>
-    <div style="font-size:12px;margin-bottom:10px">----------------------</div>
-    <div style="font-size:14px;text-align:right;font-weight:bold;margin-bottom:10px">
-      Total a Pagar: ${fmt(v.total)}
-    </div>
-    <div style="font-size:12px;margin-bottom:15px">
-      <strong>Forma de pago:</strong> ${v.pago}
-    </div>
-    ${v.obs ? `<div style="font-size:11px;margin-bottom:10px">Nota: ${v.obs}</div>` : ''}
-    <div style="text-align:center;font-size:11px;padding-top:10px">
-      ¡Gracias por su compra!<br>
-      Este es un comprobante no fiscal.
+    <div style="text-align:center;font-family:monospace;padding:10px;color:#000;background:#fff">
+      <div style="font-size:18px;font-weight:bold">MOTOTALLER PRO</div>
+      <div style="font-size:11px">NIT: 900.123.456-7</div>
+      <div style="font-size:10px">Res. DIAN No. 1876400000123 de 2026-01-01</div>
+      <div style="font-size:10px">Prefijo: MT - Rango: 1 al 5000</div>
+      <div style="font-size:14px;margin:10px 0;border-top:1px solid #000;border-bottom:1px solid #000;padding:5px 0;font-weight:bold">
+        FACTURA ELECTRÓNICA DE VENTA: ${v.id}
+      </div>
+      
+      <div style="text-align:left;font-size:11px">
+        Fecha: ${v.fecha} ${new Date().toLocaleTimeString()}<br>
+        Cliente: ${c ? c.nombre : 'Venta Directa'}<br>
+        CC/NIT: ${c ? c.cedula : '222222222'}<br>
+        Forma de Pago: ${v.pago}
+      </div>
+
+      <div style="margin:10px 0;border-bottom:1px dashed #000"></div>
+      <table style="width:100%;font-size:11px;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid #000">
+            <th style="text-align:left">Cant</th>
+            <th style="text-align:left">Descripción</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${v.items.map(i => `
+            <tr>
+              <td>${i.qty}</td>
+              <td>${i.desc}</td>
+              <td style="text-align:right">${fmt(i.qty * (i.price || i.precio))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="margin:10px 0;border-bottom:1px dashed #000"></div>
+
+      <div style="text-align:right;font-size:11px">
+        Subtotal (Base): ${fmt(v.total / 1.19)}<br>
+        IVA (19%): ${fmt(v.total - (v.total / 1.19))}<br>
+        ${v.desc ? `Descuento: -${fmt(v.desc)}<br>` : ''}
+        <span style="font-size:15px;font-weight:bold">TOTAL A PAGAR: ${fmt(v.total)}</span>
+      </div>
+
+      <div style="margin:15px 0; text-align:center">
+        <div style="font-size:8px;word-break:break-all;margin-bottom:5px">CUFE: ${cufe}</div>
+        <img src="${qrUrl}" width="100" height="100" style="margin:5px auto; display:block">
+        <div style="font-size:9px;margin-top:5px">Representación gráfica de la factura electrónica</div>
+      </div>
+
+      <div style="font-size:9px;text-align:center;margin-top:15px;border-top:1px solid #eee;padding-top:10px">
+        Esta factura se asimila en todos sus efectos a una letra de cambio.<br>
+        Gracias por preferir a MotoTaller Pro.
+      </div>
     </div>
   `;
 
@@ -1030,3 +1044,116 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
 });
+
+function verHojaDeVida(placa) {
+  const modal = document.getElementById('modal-hoja-vida');
+  if (!modal) return;
+  
+  document.getElementById('hj-placa-title').textContent = 'Hoja de Vida: ' + placa;
+  
+  const moto = state.motos.find(m => m.placa === placa);
+  const historial = state.ventas.filter(v => v.clienteId === moto?.clienteId);
+
+  const tb = document.getElementById('tabla-hoja-vida');
+  if (historial.length === 0) {
+    tb.innerHTML = `<tr><td colspan="4"><div class="empty-state">No hay servicios registrados para esta placa</div></td></tr>`;
+  } else {
+    tb.innerHTML = historial.map(v => `
+      <tr>
+        <td>${v.fecha}</td>
+        <td><strong>${v.id}</strong></td>
+        <td>${v.items.map(i => i.desc).join(', ')}</td>
+        <td><strong style="color:var(--orange)">${fmt(v.total)}</strong></td>
+      </tr>
+    `).join('');
+  }
+  
+  openModal('modal-hoja-vida');
+}
+
+/* ── Business Intelligence ──────────────────────────────────── */
+
+function renderInsights() {
+  const container = document.getElementById('dash-insights');
+  if (!container) return;
+
+  const insights = [];
+  const hoyStr = new Date().toISOString().split('T')[0];
+  
+  // 1. Predicción de stock
+  const agotandose = state.inventario.filter(r => r.stock <= r.min && r.stock > 0);
+  if (agotandose.length > 0) {
+    insights.push(`🟠 <strong>Reabastecimiento urgente:</strong> Tienes ${agotandose.length} productos casi agotados. Se recomienda pedir hoy.`);
+  }
+
+  // 2. Análisis de Clientes
+  const sinVen = state.clientes.length - new Set(state.ventas.map(v => v.clienteId)).size;
+  if (sinVen > 0) {
+    insights.push(`👥 <strong>Oportunidad:</strong> Tienes ${sinVen} clientes que aún no han realizado su primera compra. ¡Lánzales una promo!`);
+  }
+
+  // 3. Flujo de Caja
+  const totalCreditos = state.ventas.filter(v => v.pago === 'Crédito' && v.estadoPago !== 'Pagado').reduce((s, v) => s + v.total, 0);
+  if (totalCreditos > 0) {
+    insights.push(`💰 <strong>Cartera:</strong> Tienes ${fmt(totalCreditos)} pendientes por cobrar. Recuperar este dinero mejorará tu flujo.`);
+  }
+
+  if (insights.length === 0) {
+    container.innerHTML = 'El sistema está analizando datos... No hay recomendaciones por ahora.';
+  } else {
+    container.innerHTML = insights.map(i => `<div style="margin-bottom:12px">${i}</div>`).join('');
+  }
+}
+
+/* ── Global Search ─────────────────────────────────────────── */
+
+function handleGlobalSearch() {
+  const q = document.getElementById('global-search').value.toLowerCase().trim();
+  const resDiv = document.getElementById('global-search-results');
+  
+  if (!q) {
+    resDiv.style.display = 'none';
+    return;
+  }
+
+  const results = [];
+  
+  // Buscar Clientes
+  state.clientes.forEach(c => {
+    if (c.nombre.toLowerCase().includes(q) || c.cedula.includes(q)) {
+      results.push({ type: 'Cliente', text: c.nombre, icon: '👤', action: `showPage('clientes')` });
+    }
+  });
+
+  // Buscar Motos
+  state.motos.forEach(m => {
+    if (m.placa.toLowerCase().includes(q)) {
+      results.push({ type: 'Moto', text: `Placa: ${m.placa} (${m.marca})`, icon: '🏍️', action: `verHojaDeVida('${m.placa}')` });
+    }
+  });
+
+  // Buscar Inventario
+  state.inventario.forEach(r => {
+    if (r.desc.toLowerCase().includes(q) || r.codigo.toLowerCase().includes(q)) {
+      results.push({ type: 'Repuesto', text: `${r.desc} - Stock: ${r.stock}`, icon: '📦', action: `showPage('inventario')` });
+    }
+  });
+
+  if (results.length === 0) {
+    resDiv.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text3)">No se encontró nada</div>';
+  } else {
+    resDiv.innerHTML = results.map(r => `
+      <div class="nav-item" onclick="${r.action}; document.getElementById('global-search-results').style.display='none'; document.getElementById('global-search').value=''" style="margin:2px 0; border-radius:4px; padding:8px; width:auto; text-align:left">
+        <span style="margin-right:8px">${r.icon}</span>
+        <div style="flex:1">
+          <div style="font-size:12px; font-weight:700">${r.text}</div>
+          <div style="font-size:10px; color:var(--text3)">${r.type}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  resDiv.style.display = 'block';
+}
+
+init();
