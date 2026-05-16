@@ -18,7 +18,17 @@ function showPage(name, btn) {
     ventas:     'Ventas y facturación',
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
+  
+  // Cerrar sidebar en móvil tras click
+  const sb = document.getElementById('sidebar');
+  if (sb.classList.contains('open')) toggleSidebar();
+
   refresh();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
 }
 
 /* ── Refresh global ─────────────────────────────────────────── */

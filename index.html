@@ -59,7 +59,8 @@
 <div class="app-shell app-hidden" id="app-shell">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">🔧</div>
       <h1>MotoTaller</h1>
@@ -96,6 +97,7 @@
   <!-- ÁREA PRINCIPAL -->
   <div class="main">
     <div class="topbar">
+      <div class="mobile-menu-btn" onclick="toggleSidebar()">☰</div>
       <h2 id="topbar-title">Dashboard</h2>
       <div class="topbar-right">
         <input class="search-bar" placeholder="Buscar..." id="global-search"/>
