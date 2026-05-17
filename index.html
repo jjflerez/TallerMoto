@@ -13,8 +13,10 @@
      PANTALLA DE LOGIN
 ══════════════════════════════════════════════ -->
 <div class="login-screen" id="login-screen">
+  <div class="login-glow-1"></div>
+  <div class="login-glow-2"></div>
+
   <div class="login-left">
-    <div class="login-bg-text">TALLER</div>
     <div class="login-logo">🔧</div>
     <h1 class="login-title">Taller Moto Caribe</h1>
     <p class="login-subtitle">Gestión Integral de Taller</p>
@@ -30,17 +32,22 @@
         <input id="login-pass" type="password" placeholder="••••••••"
                autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
-      <div style="text-align: right; margin-bottom: 20px;">
-        <a href="#" style="font-size: 11px; color: var(--text3); text-decoration: none;" onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
+      <div style="text-align: right; margin-bottom: 10px;">
+        <a href="#" style="font-size: 11px; color: var(--text2); text-decoration: none;" onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
       </div>
       <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
       <button class="login-btn" onclick="doLogin()">Ingresar al sistema →</button>
     </div>
 
-
+    <!-- Quick Access Demo Chips -->
+    <div class="login-quick-access">
+      <span class="quick-title">Acceso Rápido</span>
+      <div class="quick-chips">
+        <button class="btn-quick admin" onclick="fillLogin('admin', 'admin123')">🔑 Admin</button>
+        <button class="btn-quick" onclick="fillLogin('ventas', 'ventas123')">🛒 Vendedor</button>
+      </div>
+    </div>
   </div>
-
-
 </div>
 
 <!-- ══════════════════════════════════════════════

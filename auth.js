@@ -23,6 +23,17 @@ let currentUser = null;
 /**
  * Intenta iniciar sesión con las credenciales del formulario.
  */
+function fillLogin(u, p) {
+  document.getElementById('login-user').value = u;
+  document.getElementById('login-pass').value = p;
+  if (typeof toast === 'function') {
+    toast('Cargando credenciales e ingresando...', 'success');
+  }
+  setTimeout(() => {
+    doLogin();
+  }, 300);
+}
+
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value;
