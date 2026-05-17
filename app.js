@@ -3,6 +3,16 @@
    ============================================================ */
 const MORA_DIARIA = 1000; // Valor de la mora por día de retraso (COP)
 
+/* ── CONFIGURACIÓN DE CORREO (EmailJS) ───────────────────────
+   Pega aquí tus llaves de emailjs.com para activar el envío real
+   ────────────────────────────────────────────────────────── */
+const EMAILJS_PUBLIC_KEY = "rWEvC-53wQrarZij8";
+const EMAILJS_SERVICE_ID = "service_2p9bbl3";
+const EMAILJS_TEMPLATE_ID = "template_z9v1z0s";
+
+// Opción A: URL de Google Apps Script para correo 100% gratis
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaIh7q3CvVVT09Ow086xmQk2aQllCjLUEb4DklOuQ/exec";
+
 /* ── Navegación ─────────────────────────────────────────────── */
 
 function showPage(name, btn) {
@@ -125,6 +135,25 @@ function renderDashboard() {
   const bajoStock = state.inventario.filter(r => r.stock <= r.min);
   if (dStock) dStock.textContent = bajoStock.length;
 
+  // Cálculo de Utilidad (Solo Admin)
+  const dUtil = document.getElementById('dash-utilidad');
+  const dUtilCard = document.getElementById('card-utilidad');
+  
+  if (currentUser?.role === 'Administrador' && dUtil) {
+    let costoTotalMes = 0;
+    ventasMes.forEach(v => {
+      v.items.forEach(item => {
+        const p = state.inventario.find(r => r.id === item.id);
+        if (p) costoTotalMes += (p.costo * item.qty);
+      });
+    });
+    const utilidad = totalMes - costoTotalMes;
+    dUtil.textContent = fmt(utilidad);
+    if (dUtilCard) dUtilCard.style.display = 'flex';
+  } else if (dUtilCard) {
+    dUtilCard.style.display = 'none';
+  }
+
   // Alertas de Stock
   const alertInv = document.getElementById('dash-alertas');
   if (alertInv) {
@@ -184,6 +213,43 @@ function renderDashboard() {
   }
 
   alertDiv.innerHTML = html;
+
+  // Calcular los más vendidos
+  const repMasVendidos = {};
+  state.ventas.forEach(v => {
+    v.items.forEach(item => {
+      if (!repMasVendidos[item.desc]) {
+        repMasVendidos[item.desc] = { qty: 0, total: 0 };
+      }
+      repMasVendidos[item.desc].qty += item.qty;
+      repMasVendidos[item.desc].total += (item.price * item.qty);
+    });
+  });
+
+  const topVendidos = Object.keys(repMasVendidos)
+    .map(name => ({ name, ...repMasVendidos[name] }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+
+  const containerTop = document.getElementById('dash-top-vendidos');
+  if (containerTop) {
+    if (!topVendidos.length) {
+      containerTop.innerHTML = '<div class="empty-state">No hay ventas registradas aún</div>';
+    } else {
+      containerTop.innerHTML = topVendidos.map((item, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border)">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-weight:700; color:var(--orange); width:20px">${idx + 1}.</span>
+            <div>
+              <div style="font-weight:600">${item.name}</div>
+              <div style="font-size:11px; color:var(--text3)">${item.qty} uds. vendidas</div>
+            </div>
+          </div>
+          <div style="font-weight:700; color:var(--green)">${fmt(item.total)}</div>
+        </div>
+      `).join('');
+    }
+  }
 }
 
 function renderCreditRow(v, color) {
@@ -425,6 +491,23 @@ function deleteMoto(id) {
 
 /* ── Inventario ─────────────────────────────────────────────── */
 
+function exportarInventarioExcel() {
+  const wb = XLSX.utils.book_new();
+  const datos = state.inventario.map(r => ({
+    Codigo: r.codigo,
+    Descripcion: r.desc,
+    Categoria: r.cat,
+    Stock: r.stock,
+    Minimo: r.min,
+    Costo: r.costo,
+    Venta: r.venta,
+    Compatibilidad: r.compat || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(datos);
+  XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+  XLSX.writeFile(wb, "Inventario_MotoTaller.xlsx");
+}
+
 function renderInventario() {
   const q   = (document.getElementById('search-inv')?.value || '').toLowerCase();
   const cat = document.getElementById('filter-cat')?.value || '';
@@ -540,11 +623,139 @@ function deleteRepuesto(id) {
 let posItems = [];
 
 function switchVentasTab(tab) {
-  document.getElementById('btn-tab-pos').className  = tab === 'pos'  ? 'btn btn-primary' : 'btn btn-ghost';
-  document.getElementById('btn-tab-hist').className = tab === 'hist' ? 'btn btn-primary' : 'btn btn-ghost';
-  document.getElementById('view-pos').style.display  = tab === 'pos'  ? 'flex' : 'none';
-  document.getElementById('view-hist').style.display = tab === 'hist' ? 'flex' : 'none';
+  const tabs = ['pos', 'hist', 'cot'];
+  tabs.forEach(t => {
+    const view = document.getElementById('view-' + t);
+    const btn = document.getElementById('btn-tab-' + t);
+    if (view) view.style.display = (t === tab) ? 'flex' : 'none';
+    if (btn) btn.className = (t === tab) ? 'btn btn-primary' : 'btn btn-ghost';
+  });
+  
+  if (tab === 'hist') renderVentas();
+  if (tab === 'cot') renderCotizaciones();
   if (tab === 'pos') renderPosCatalog();
+}
+
+function generarCotizacion() {
+  if (!posItems.length) return toast('Agrega repuestos primero', 'warning');
+  
+  const clienteId = document.getElementById('pos-cliente-id')?.value || null;
+  const c = state.clientes.find(x => x.id === clienteId);
+  
+  // Pre-llenar el modal con datos si existen
+  document.getElementById('cot-nombre-manual').value = c ? c.nombre : '';
+  document.getElementById('cot-tel-manual').value = c ? c.tel : '';
+  
+  openModal('modal-cot-info');
+}
+
+async function confirmarGenerarCotizacion() {
+  const nombreManual = document.getElementById('cot-nombre-manual').value.trim();
+  const telManual = document.getElementById('cot-tel-manual').value.trim();
+  
+  if (!nombreManual) return toast('El nombre es obligatorio', 'warning');
+
+  const id = 'COT-' + Date.now().toString().slice(-6);
+  const clienteId = document.getElementById('pos-cliente-id')?.value || null;
+  
+  const subtotal = posItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+  const iva = subtotal * 0.19;
+  const total = subtotal + iva;
+
+  const cot = {
+    id,
+    fecha: new Date().toISOString().split('T')[0],
+    clienteId,
+    nombreManual,
+    telManual,
+    items: [...posItems],
+    subtotal,
+    iva,
+    total,
+    validez: '48 Horas'
+  };
+
+  try {
+    if (typeof db !== 'undefined' && db) {
+      await db.collection('cotizaciones').doc(id).set(cot);
+    }
+    
+    if (!state.cotizaciones) state.cotizaciones = [];
+    state.cotizaciones.push(cot);
+    
+    closeModal('modal-cot-info');
+    toast('¡Cotización generada!', 'success');
+    
+    posItems = [];
+    renderPos();
+    switchVentasTab('cot');
+  } catch (e) {
+    console.error(e);
+    toast('Error al guardar', 'error');
+  }
+}
+
+function renderCotizaciones() {
+  const tb = document.getElementById('tabla-cotizaciones');
+  const cots = state.cotizaciones || [];
+  
+  if (!cots.length) {
+    tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">Sin cotizaciones</div></td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = [...cots].reverse().map(cot => {
+    const cli = state.clientes.find(x => x.id === cot.clienteId);
+    const nombreAMostrar = cot.nombreManual || (cli ? cli.nombre : 'Cliente General');
+    return `<tr>
+      <td><strong>${cot.id}</strong></td>
+      <td>${cot.fecha}</td>
+      <td>${nombreAMostrar}</td>
+      <td style="color:var(--orange);font-weight:700">${fmt(cot.total)}</td>
+      <td>${cot.validez}</td>
+      <td>
+        <div style="display:flex; gap:4px">
+          <button class="btn btn-primary btn-sm" onclick="convertirCotizacion('${cot.id}')" title="Convertir a Venta">🛒</button>
+          <button class="btn btn-ghost btn-sm" onclick="descargarPDFCotizacion('${cot.id}')" title="Descargar PDF">📄</button>
+          <button class="btn btn-ghost btn-sm" onclick="enviarCotizacionWS('${cot.id}')" title="Enviar WhatsApp">📱</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarCotizacion('${cot.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function convertirCotizacion(id) {
+  const cot = state.cotizaciones.find(x => x.id === id);
+  if (!cot) return;
+  
+  posItems = [...cot.items];
+  document.getElementById('pos-cliente-id').value = cot.clienteId || '';
+  switchVentasTab('pos');
+  renderPos();
+  toast('Cotización cargada en el Punto de Venta', 'info');
+}
+
+function enviarCotizacionWS(id) {
+  const cot = state.cotizaciones.find(x => x.id === id);
+  const c = state.clientes.find(x => x.id === cot.clienteId);
+  
+  const nombre = cot.nombreManual || (c ? c.nombre : 'cliente');
+  const itemsText = cot.items.map(i => `- ${i.desc} x${i.qty}: ${fmt(i.price * i.qty)}`).join('\n');
+  const msg = `🌴 *COTIZACIÓN MOTO CARIBE* 🏍️\n\nHola *${nombre}*,\nadjuntamos el presupuesto solicitado:\n\n${itemsText}\n\n➕ *Subtotal:* ${fmt(cot.subtotal)}\n🧾 *IVA (19%):* ${fmt(cot.iva)}\n💰 *TOTAL:* ${fmt(cot.total)}\n⏳ *Validez:* ${cot.validez}\n\nQuedamos atentos a tu pedido.`;
+  
+  const tel = cot.telManual || (c && c.tel ? c.tel.replace(/\D/g,'') : '');
+  window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+async function eliminarCotizacion(id) {
+  if (!confirm('¿Eliminar esta cotización?')) return;
+  try {
+    if (window.db) await db.collection('cotizaciones').doc(id).delete();
+    state.cotizaciones = state.cotizaciones.filter(x => x.id !== id);
+    renderCotizaciones();
+    toast('Cotización eliminada', 'success');
+  } catch (e) { toast('Error al eliminar', 'error'); }
 }
 
 function renderVentas() {
@@ -556,7 +767,7 @@ function renderVentas() {
 
   const tb = document.getElementById('tabla-ventas');
   if (!state.ventas.length) {
-    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🧾</div>Sin ventas</div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">🧾</div>Sin ventas</div></td></tr>`;
   } else {
     tb.innerHTML = [...state.ventas].reverse().map(v => {
       const c = state.clientes.find(x => x.id === v.clienteId);
@@ -570,10 +781,15 @@ function renderVentas() {
         <td><strong style="color:var(--orange)">${fmt(v.total)}</strong></td>
         <td><span class="badge badge-green">${v.pago}</span></td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="imprimirFactura('${v.id}')">🖨️</button>
-          ${currentUser?.role === 'Administrador' ? `
-          <button class="btn btn-danger btn-sm" onclick="deleteVenta('${v.id}')">🗑️</button>
-          ` : ''}
+          <div style="display:flex; gap:4px">
+            <button class="btn btn-ghost btn-sm" onclick="imprimirFactura('${v.id}')" title="Imprimir">🖨️</button>
+            <button class="btn btn-ghost btn-sm" onclick="descargarPDF('${v.id}')" title="Descargar PDF">📄</button>
+            <button class="btn btn-ghost btn-sm" onclick="enviarEmail('${v.id}')" title="Enviar por Correo">📧</button>
+            <button class="btn btn-ghost btn-sm" style="color:#25D366" onclick="enviarWhatsAppFactura('${v.id}')" title="Enviar por WhatsApp">📱</button>
+            ${currentUser?.role === 'Administrador' ? `
+            <button class="btn btn-danger btn-sm" onclick="deleteVenta('${v.id}')" title="Eliminar">🗑️</button>
+            ` : ''}
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -587,11 +803,13 @@ function renderVentas() {
 function renderPosCatalog() {
   const q = (document.getElementById('pos-search')?.value || '').toLowerCase();
   const qc = (document.getElementById('pos-compat-search')?.value || '').toLowerCase();
+  const selectedCat = state.selectedPosCategory || '';
   
   const filtered = state.inventario.filter(r => {
     const matchName = r.desc.toLowerCase().includes(q) || r.codigo.toLowerCase().includes(q);
     const matchCompat = !qc || (r.compat && r.compat.toLowerCase().includes(qc));
-    return matchName && matchCompat;
+    const matchCat = !selectedCat || r.cat === selectedCat;
+    return matchName && matchCompat && matchCat;
   });
   
   const container = document.getElementById('pos-catalog');
@@ -612,6 +830,8 @@ function renderPosCatalog() {
       </div>
     `;
   }).join('');
+
+  renderPosCategories();
 }
 
 function addToCart(id) {
@@ -861,7 +1081,7 @@ function imprimirFactura(id) {
 
   const html = `
     <div style="text-align:center;font-family:monospace;padding:10px;color:#000;background:#fff">
-      <div style="font-size:18px;font-weight:bold">MOTOTALLER PRO</div>
+      <div style="font-size:18px;font-weight:bold">TALLER MOTO CARIBE</div>
       <div style="font-size:11px">NIT: 900.123.456-7</div>
       <div style="font-size:10px">Res. DIAN No. 1876400000123 de 2026-01-01</div>
       <div style="font-size:10px">Prefijo: MT - Rango: 1 al 5000</div>
@@ -922,6 +1142,87 @@ function imprimirFactura(id) {
   window.print();
 }
 
+async function descargarPDF(id) {
+  const v = state.ventas.find(x => x.id === id);
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  toast('Generando PDF...', 'info');
+  imprimirFactura(id); 
+  const elemento = document.getElementById('ticket-print');
+  const opt = {
+    margin: [10, 10],
+    filename: `Factura_${v.id}_${c ? c.nombre.replace(/ /g,'_') : 'Cliente'}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  try {
+    await html2pdf().set(opt).from(elemento).save();
+    toast('PDF descargado', 'success');
+  } catch (err) {
+    toast('Error al generar PDF', 'error');
+  }
+}
+
+async function enviarEmail(id) {
+  const v = state.ventas.find(x => x.id === id);
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  if (!c || !c.email) return toast('El cliente no tiene correo registrado', 'warning');
+
+  // Si hay URL de Google, usamos el método 100% Gratis
+  if (GOOGLE_SCRIPT_URL) {
+    toast('Enviando vía Google Mail (Gratis)...', 'info');
+    try {
+      const resp = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+          to: c.email,
+          subject: `Factura ${v.id} - Taller Moto Caribe`,
+          body: `Hola ${c.nombre},\n\nGracias por confiar en Taller Moto Caribe. Tu factura N° ${v.id} por un total de ${fmt(v.total)} ha sido generada.\n\nPuedes descargarla en el sistema.`
+        })
+      });
+      toast(`📧 Factura enviada a ${c.email} (Google)`, 'success');
+      return;
+    } catch (e) {
+      console.error(e);
+      toast('Error con servidor Google. Revisa la URL.', 'error');
+    }
+  }
+
+  // De lo contrario, usar EmailJS (Limitado)
+  if (!EMAILJS_PUBLIC_KEY) return toast('Configura una opción de envío', 'error');
+  toast('Generando PDF y enviando (EmailJS)...', 'info');
+  try {
+    imprimirFactura(id);
+    const pdfBase64 = await html2pdf().from(document.getElementById('ticket-print')).outputPdf('datauristring');
+    const base64Content = pdfBase64.split(',')[1];
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_name: c.nombre, to_email: c.email, invoice_id: v.id, total_amount: fmt(v.total), content: base64Content
+    });
+    toast(`📧 Enviada con éxito a ${c.email}`, 'success');
+  } catch (e) { toast('Error en envío', 'error'); }
+}
+
+async function enviarWhatsAppFactura(id) {
+  const v = state.ventas.find(x => x.id === id);
+  const c = state.clientes.find(x => x.id === v.clienteId);
+  if (!c || !c.tel) return toast('El cliente no tiene teléfono', 'error');
+
+  // 1. Generar y descargar el PDF automáticamente
+  toast('Generando PDF para enviar...', 'info');
+  await descargarPDF(id);
+
+  // 2. Preparar mensaje y abrir WhatsApp
+  const tel = c.tel.replace(/\D/g,'');
+  const msg = `🌴 *TALLER MOTO CARIBE* 🏍️\n\nHola *${c.nombre}*, adjunto te envío tu factura electrónica *${v.id}*.\n\n💰 *Total:* ${fmt(v.total)}\n✅ *Estado:* Pagado\n\n_El PDF se ha descargado en tu equipo. Por favor adjúntalo a este chat._`;
+  
+  setTimeout(() => {
+    window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    toast('Abriendo WhatsApp...', 'success');
+  }, 1500);
+}
+
 /**
  * Genera el resumen de caja del día de hoy
  */
@@ -975,7 +1276,7 @@ function imprimirCierre() {
 
   const html = `
     <div style="text-align:center;margin-bottom:10px">
-      <h2 style="margin:0;font-size:18px">MotoTaller</h2>
+      <h2 style="margin:0;font-size:18px">Taller Moto Caribe</h2>
       <div style="font-size:12px">CIERRE DE CAJA DIARIO</div>
       <div style="font-size:12px;margin-top:4px">----------------------</div>
     </div>
@@ -1154,6 +1455,147 @@ function handleGlobalSearch() {
   }
   
   resDiv.style.display = 'block';
+}
+
+/**
+ * Exporta el inventario completo a un archivo Excel profesional
+ */
+function exportarInventarioExcel() {
+  toast('Generando archivo Excel...', 'info');
+  
+  // 1. Preparar los datos
+  const data = state.inventario.map(r => ({
+    'Código': r.codigo,
+    'Descripción': r.desc,
+    'Compatibilidad': r.compat || 'Universal',
+    'Categoría': r.cat,
+    'Stock Actual': r.stock,
+    'Stock Mínimo': r.min,
+    'Precio Costo': r.costo,
+    'Precio Venta': r.venta,
+    'Margen (Ganancia)': r.venta - r.costo,
+    'Valorización Inventario': r.stock * r.costo
+  }));
+
+  // 2. Crear el libro de Excel
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Inventario Moto Caribe");
+
+  // 3. Descargar
+  const fecha = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Inventario_Moto_Caribe_${fecha}.xlsx`);
+  
+  toast('Excel descargado con éxito', 'success');
+}
+
+function descargarPDFCotizacion(id) {
+  const cot = state.cotizaciones.find(x => x.id === id);
+  const c = state.clientes.find(x => x.id === cot.clienteId);
+  
+  const html = `
+    <div style="text-align:center;font-family:sans-serif;padding:20px;color:#000;background:#fff">
+      <div style="font-size:22px;font-weight:bold">TALLER MOTO CARIBE</div>
+      <div style="font-size:12px;margin-bottom:15px">COTIZACIÓN DE REPUESTOS</div>
+      
+      <div style="text-align:left;font-size:14px;margin-bottom:20px;border:1px solid #eee;padding:15px;border-radius:8px;background:#fcfcfc">
+        <div style="font-size:16px;color:var(--orange);margin-bottom:5px"><strong>CLIENTE:</strong> ${(cot.nombreManual || (c ? c.nombre : 'CLIENTE GENERAL')).toUpperCase()}</div>
+        ${cot.telManual ? `<strong>Teléfono:</strong> ${cot.telManual}<br>` : ''}
+        <strong>Cotización N°:</strong> ${cot.id}<br>
+        <strong>Fecha de Emisión:</strong> ${cot.fecha}<br>
+        <strong>Validez de Oferta:</strong> ${cot.validez}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="background:#f9f9f9">
+          <tr>
+            <th style="border:1px solid #eee;padding:8px;text-align:left">Repuesto</th>
+            <th style="border:1px solid #eee;padding:8px;text-align:center">Cant.</th>
+            <th style="border:1px solid #eee;padding:8px;text-align:right">IVA (19%)</th>
+            <th style="border:1px solid #eee;padding:8px;text-align:right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cot.items.map(i => `
+            <tr>
+              <td style="border:1px solid #eee;padding:8px">${i.desc}</td>
+              <td style="border:1px solid #eee;padding:8px;text-align:center">${i.qty}</td>
+              <td style="border:1px solid #eee;padding:8px;text-align:right">${fmt(i.price * i.qty * 0.19)}</td>
+              <td style="border:1px solid #eee;padding:8px;text-align:right">${fmt(i.price * i.qty)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div style="text-align:right;margin-top:20px;font-size:14px">
+        <div style="margin-bottom:5px">Subtotal: ${fmt(cot.subtotal)}</div>
+        <div style="margin-bottom:5px;color:#666">IVA (19%): ${fmt(cot.iva)}</div>
+        <div style="font-size:18px;font-weight:bold;color:var(--orange);border-top:1px solid #eee;padding-top:10px;margin-top:5px">
+          TOTAL: ${fmt(cot.total)}
+        </div>
+      </div>
+
+      <div style="margin-top:40px;font-size:11px;color:#666">
+        * Esta cotización no garantiza la reserva de los repuestos hasta que se realice el pago.<br>
+        * Precios sujetos a cambio sin previo aviso.
+      </div>
+    </div>
+  `;
+
+  const worker = html2pdf().from(html).set({
+    margin: 10,
+    filename: `Cotizacion_${cot.id}.pdf`,
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).save();
+  
+  toast('Generando PDF de Cotización...', 'info');
+}
+
+  // Cargar Cotizaciones
+  if (typeof db !== 'undefined' && db) {
+    db.collection('cotizaciones').onSnapshot(snap => {
+      state.cotizaciones = snap.docs.map(doc => doc.data());
+      if (document.getElementById('view-cot')?.style.display !== 'none') renderCotizaciones();
+    });
+  }
+
+function renderPosCategories() {
+  const container = document.getElementById('pos-category-filters');
+  if (!container) return;
+
+  const cats = [...new Set(state.inventario.map(r => r.cat))].filter(Boolean);
+  const active = state.selectedPosCategory || '';
+
+  let html = `<button class="btn btn-sm ${active === '' ? 'btn-primary' : 'btn-ghost'}" onclick="setPosCategory('')" style="white-space:nowrap; border-radius:20px; padding:4px 14px">Todos</button>`;
+  
+  html += cats.map(c => `
+    <button class="btn btn-sm ${active === c ? 'btn-primary' : 'btn-ghost'}" onclick="setPosCategory('${c}')" style="white-space:nowrap; border-radius:20px; padding:4px 14px">${c}</button>
+  `).join('');
+
+  container.innerHTML = html;
+}
+
+function setPosCategory(cat) {
+  state.selectedPosCategory = cat;
+  renderPosCatalog();
+}
+
+function generarPedidoProveedor() {
+  const bajoStock = state.inventario.filter(r => r.stock <= r.min);
+  if (!bajoStock.length) {
+    return toast('Todo tu inventario está al día. ¡No necesitas pedir stock!', 'success');
+  }
+
+  const itemsText = bajoStock.map(r => {
+    const cantidadRecomendada = (r.min * 2) - r.stock;
+    return `- ${r.desc} (Código: ${r.codigo}) - Solicitar: ${cantidadRecomendada} unidades (Stock actual: ${r.stock})`;
+  }).join('\n');
+
+  const msg = `🌴 *PEDIDO DE STOCK - TALLER MOTO CARIBE* 🏍️\n\nHola, necesito realizar un pedido de reposición para los siguientes repuestos:\n\n${itemsText}\n\nQuedo atento a la confirmación de disponibilidad y precios. ¡Gracias!`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  toast('Generando lista y abriendo WhatsApp...', 'success');
 }
 
 init();
