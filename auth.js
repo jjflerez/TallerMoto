@@ -308,10 +308,17 @@ function deleteUsuario(username) {
   toast('Usuario eliminado', 'success');
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', restoreSession);
-} else {
+async function startup() {
+  if (typeof loadFromFirebase === 'function') {
+    await loadFromFirebase();
+  }
   restoreSession();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startup);
+} else {
+  startup();
 }
 
 /**
