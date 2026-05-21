@@ -66,7 +66,11 @@ async function loadFromFirebase() {
       
       // Actualizar usuarios si existen
       if (data.usuarios && data.usuarios.length > 0) {
-        USERS = data.usuarios;
+        if (typeof setUsers === 'function') {
+          setUsers(data.usuarios);
+        } else {
+          USERS = data.usuarios;
+        }
       }
       
       console.log("Datos cargados desde Firebase ✅");

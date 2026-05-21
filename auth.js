@@ -20,6 +20,11 @@ if (savedUsers) {
 
 let currentUser = null;
 
+function setUsers(newUsers) {
+  USERS = newUsers;
+  localStorage.setItem('motoTallerUsersList', JSON.stringify(USERS));
+}
+
 /**
  * Intenta iniciar sesión con las credenciales del formulario.
  */
