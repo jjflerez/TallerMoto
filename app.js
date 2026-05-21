@@ -552,9 +552,7 @@ function renderInventario() {
         : '<span class="badge badge-green">✅ Ok</span>'}</td>
       <td>
         <button class="btn btn-ghost btn-sm" onclick="editRepuesto('${r.id}')">✏️</button>
-        ${currentUser?.role === 'Administrador' ? `
         <button class="btn btn-danger btn-sm" onclick="deleteRepuesto('${r.id}')">🗑️</button>
-        ` : ''}
       </td>
     </tr>`;
   }).join('');
