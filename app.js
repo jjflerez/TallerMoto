@@ -1596,13 +1596,14 @@ function generarPedidoProveedor() {
   toast('Generando lista y abriendo WhatsApp...', 'success');
 }
 
+// Estado temporal del carrito de ventas (declarado antes de init() para evitar TDZ)
+let formVentasCarrito = [];
+
 init();
 
 // =======================================================
 // LÓGICA DEL NUEVO FORMULARIO DE VENTAS CON BÚSQUEDA Y CARRITO
 // =======================================================
-
-let formVentasCarrito = [];
 
 function cargarClientesFormVentas() {
   const select = document.getElementById('v-form-cliente');
@@ -1656,25 +1657,44 @@ function seleccionarItemFormVenta(id, desc, price) {
 }
 
 function agregarItemFormVenta() {
-  const desc = document.getElementById('v-form-item-search').value.trim();
-  const qty = parseFloat(document.getElementById('v-form-item-qty').value) || 1;
-  const price = parseFloat(document.getElementById('v-form-item-price').value) || 0;
-  const id = document.getElementById('v-form-item-id').value;
-  
-  if (!desc || price <= 0) {
-    return toast('Ingresa una descripción válida y un precio mayor a 0', 'warning');
+  try {
+    const descEl = document.getElementById('v-form-item-search');
+    const qtyEl = document.getElementById('v-form-item-qty');
+    const priceEl = document.getElementById('v-form-item-price');
+    const idEl = document.getElementById('v-form-item-id');
+
+    if (!descEl || !qtyEl || !priceEl || !idEl) {
+      console.error('agregarItemFormVenta: faltan elementos del formulario', { descEl, qtyEl, priceEl, idEl });
+      toast('Error: formulario incompleto (elementos no encontrados)', 'error');
+      return;
+    }
+
+    const desc = descEl.value.trim();
+    const qty = parseFloat(qtyEl.value) || 1;
+    const price = parseFloat(priceEl.value) || 0;
+    const id = idEl.value;
+
+    console.log('agregarItemFormVenta called', { desc, qty, price, id });
+
+    if (!desc || price <= 0) {
+      return toast('Ingresa una descripción válida y un precio mayor a 0', 'warning');
+    }
+
+    formVentasCarrito.push({ id, desc, qty, price });
+
+    // Limpiar campos de entrada
+    descEl.value = '';
+    qtyEl.value = '1';
+    priceEl.value = '';
+    idEl.value = 'SERV';
+    descEl.focus();
+
+    renderCarritoFormVenta();
+  } catch (err) {
+    console.error('Error en agregarItemFormVenta', err);
+    const msg = err && err.message ? err.message : String(err);
+    toast('Error interno al añadir ítem: ' + msg, 'error');
   }
-  
-  formVentasCarrito.push({ id, desc, qty, price });
-  
-  // Limpiar campos de entrada
-  document.getElementById('v-form-item-search').value = '';
-  document.getElementById('v-form-item-qty').value = '1';
-  document.getElementById('v-form-item-price').value = '';
-  document.getElementById('v-form-item-id').value = 'SERV';
-  document.getElementById('v-form-item-search').focus();
-  
-  renderCarritoFormVenta();
 }
 
 function eliminarItemFormVenta(index) {
