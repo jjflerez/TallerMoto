@@ -1597,3 +1597,197 @@ function generarPedidoProveedor() {
 }
 
 init();
+
+// =======================================================
+// LÓGICA DEL NUEVO FORMULARIO DE VENTAS CON BÚSQUEDA Y CARRITO
+// =======================================================
+
+let formVentasCarrito = [];
+
+function cargarClientesFormVentas() {
+  const select = document.getElementById('v-form-cliente');
+  if (!select) return;
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">Venta Directa / Mostrador</option>' + 
+    state.clientes.map(c => `<option value="${c.id}">${c.nombre} (${c.cedula})</option>`).join('');
+  select.value = currentVal;
+}
+
+function buscarItemFormVenta() {
+  const q = document.getElementById('v-form-item-search').value.toLowerCase().trim();
+  const autoDiv = document.getElementById('v-form-autocomplete');
+  
+  if (q.length < 2) {
+    autoDiv.style.display = 'none';
+    document.getElementById('v-form-item-id').value = 'SERV';
+    return;
+  }
+  
+  const results = state.inventario.filter(r => r.desc.toLowerCase().includes(q) || r.codigo.toLowerCase().includes(q));
+  
+  if (results.length === 0) {
+    autoDiv.innerHTML = '<div style="padding: 10px; color: var(--text3); font-size: 13px; text-align: center;">No se encontró en inventario (Se agregará como manual)</div>';
+    autoDiv.style.display = 'block';
+    document.getElementById('v-form-item-id').value = 'SERV';
+    return;
+  }
+  
+  autoDiv.innerHTML = results.map(r => `
+    <div style="padding: 10px; border-bottom: 1px solid var(--border); cursor: pointer;" 
+         onclick="seleccionarItemFormVenta('${r.id}', \`${r.desc.replace(/`/g, '')}\`, ${r.venta})"
+         onmouseover="this.style.background='var(--bg3)'" 
+         onmouseout="this.style.background=''">
+      <div style="font-weight: 600;">${r.desc}</div>
+      <div style="font-size: 11px; color: var(--text3); display: flex; justify-content: space-between;">
+        <span>Código: ${r.codigo}</span>
+        <span style="color: var(--orange); font-weight: bold;">${fmt(r.venta)}</span>
+      </div>
+    </div>
+  `).join('');
+  autoDiv.style.display = 'block';
+}
+
+function seleccionarItemFormVenta(id, desc, price) {
+  document.getElementById('v-form-item-search').value = desc;
+  document.getElementById('v-form-item-price').value = price;
+  document.getElementById('v-form-item-id').value = id;
+  document.getElementById('v-form-autocomplete').style.display = 'none';
+  document.getElementById('v-form-item-qty').focus();
+}
+
+function agregarItemFormVenta() {
+  const desc = document.getElementById('v-form-item-search').value.trim();
+  const qty = parseFloat(document.getElementById('v-form-item-qty').value) || 1;
+  const price = parseFloat(document.getElementById('v-form-item-price').value) || 0;
+  const id = document.getElementById('v-form-item-id').value;
+  
+  if (!desc || price <= 0) {
+    return toast('Ingresa una descripción válida y un precio mayor a 0', 'warning');
+  }
+  
+  formVentasCarrito.push({ id, desc, qty, price });
+  
+  // Limpiar campos de entrada
+  document.getElementById('v-form-item-search').value = '';
+  document.getElementById('v-form-item-qty').value = '1';
+  document.getElementById('v-form-item-price').value = '';
+  document.getElementById('v-form-item-id').value = 'SERV';
+  document.getElementById('v-form-item-search').focus();
+  
+  renderCarritoFormVenta();
+}
+
+function eliminarItemFormVenta(index) {
+  formVentasCarrito.splice(index, 1);
+  renderCarritoFormVenta();
+}
+
+function renderCarritoFormVenta() {
+  const tbody = document.getElementById('v-form-cart-body');
+  const totalEl = document.getElementById('v-form-total');
+  
+  if (formVentasCarrito.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:10px;">No hay ítems agregados</div></td></tr>';
+    totalEl.textContent = '$0';
+    return;
+  }
+  
+  let total = 0;
+  tbody.innerHTML = formVentasCarrito.map((item, index) => {
+    const sub = item.qty * item.price;
+    total += sub;
+    return `
+      <tr>
+        <td><strong>${item.desc}</strong></td>
+        <td>${item.qty}</td>
+        <td>${fmt(item.price)}</td>
+        <td style="font-weight:bold;">${fmt(sub)}</td>
+        <td><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="eliminarItemFormVenta(${index})">✕</button></td>
+      </tr>
+    `;
+  }).join('');
+  
+  totalEl.textContent = fmt(total);
+}
+
+function procesarVentaCompleta() {
+  if (formVentasCarrito.length === 0) {
+    return toast('Agrega al menos un ítem a la venta', 'warning');
+  }
+
+  const clienteId = document.getElementById('v-form-cliente').value;
+  const pago = document.getElementById('v-form-pago').value;
+  const obs = document.getElementById('v-form-obs').value.trim();
+
+  let total = 0;
+  formVentasCarrito.forEach(i => total += (i.qty * i.price));
+
+  const id = 'F' + Date.now().toString().slice(-6);
+
+  const venta = {
+    id,
+    fecha: new Date().toISOString().split('T')[0],
+    clienteId: clienteId || null,
+    items: [...formVentasCarrito],
+    subtotal: total,
+    iva: 0,
+    total: total,
+    pago,
+    estadoPago: pago === 'Crédito' ? 'Pendiente' : 'Pagado',
+    fechaVencimiento: pago === 'Crédito' ? getNextDate(30) : null,
+    rep: total,
+    mo: 0,
+    desc: 0,
+    obs
+  };
+
+  try {
+    if (typeof db !== 'undefined' && db) {
+      db.collection('ventas').doc(id).set(venta);
+    }
+    
+    // Descontar inventario
+    venta.items.forEach(item => {
+      if (item.id && item.id !== 'SERV') {
+        const rep = state.inventario.find(r => r.id === item.id);
+        if (rep) {
+          rep.stock -= item.qty;
+          if (rep.stock < 0) rep.stock = 0;
+          if (typeof db !== 'undefined' && db) {
+            db.collection('inventario').doc(rep.id).update({ stock: rep.stock });
+          }
+        }
+      }
+    });
+
+    state.ventas.push(venta);
+    toast('¡Venta registrada con éxito!', 'success');
+    
+    // Limpiar
+    formVentasCarrito = [];
+    renderCarritoFormVenta();
+    document.getElementById('v-form-obs').value = '';
+    document.getElementById('v-form-cliente').value = '';
+    
+    refresh();
+  } catch (e) {
+    console.error(e);
+    toast('Error al guardar la venta', 'error');
+  }
+}
+
+// Ocultar autocomplete si hace clic afuera
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.field')) {
+    const autoDiv = document.getElementById('v-form-autocomplete');
+    if (autoDiv) autoDiv.style.display = 'none';
+  }
+});
+
+// Interceptar refresh global de manera segura
+const oldRefresh = typeof refresh === 'function' ? refresh : null;
+refresh = function() {
+  if (oldRefresh) oldRefresh();
+  cargarClientesFormVentas();
+};
+
