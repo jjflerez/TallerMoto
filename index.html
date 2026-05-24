@@ -118,10 +118,15 @@
           <button class="btn btn-primary" onclick="renderPLReport('month')">📈 Generar P&L (Mes)</button>
           <button class="btn btn-ghost" onclick="renderPLReport('year')">📈 Generar P&L (Año)</button>
           <button class="btn btn-primary" onclick="renderBalanceSheet()">📊 Generar Balance</button>
+          <button class="btn btn-primary" onclick="createClosingEntry('month')">🔒 Cierre Mensual</button>
+          <button class="btn btn-ghost" onclick="createClosingEntry('year')">🔒 Cierre Anual</button>
           <button class="btn btn-ghost" onclick="exportJournalCSV()">⬇️ Exportar Asientos CSV</button>
           <button class="btn btn-ghost" onclick="exportJournalSAI()">⬇️ Exportar Asientos SAI</button>
           <button class="btn btn-ghost" onclick="exportJournalSIE()">⬇️ Exportar SIE</button>
         </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div id="acct-closing-status">Presiona "Cierre Mensual" o "Cierre Anual" para registrar el cierre contable.</div>
       </div>
       <div class="card" style="margin-bottom:12px">
         <div id="acct-pl-report">Presiona "Generar P&L" para ver resultados.</div>

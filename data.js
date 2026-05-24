@@ -26,7 +26,8 @@ const state = {
       vatPayable: { code: '2100', name: 'IVA por Pagar', type: 'liability' }
     },
     equity: {
-      equity: { code: '3000', name: 'Patrimonio / Utilidades Acumuladas', type: 'equity' }
+      equity: { code: '3000', name: 'Patrimonio / Utilidades Acumuladas', type: 'equity' },
+      profitLoss: { code: '3100', name: 'Utilidades del Ejercicio', type: 'equity' }
     },
     revenue: {
       sales: { code: '4000', name: 'Ventas (Ingresos)', type: 'revenue' }
@@ -37,6 +38,7 @@ const state = {
     }
   },
   journalEntries: [],
+  closingEntries: [],
   nextJournalNumber: 1,
   bankAccounts: [
     { id: 'B001', name: 'Banco - Cuenta Principal', balance: 0, transactions: [], reconciled: [] }

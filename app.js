@@ -77,6 +77,8 @@ function refresh() {
   checkCredits();
   inyectarNuevosProductos();
   renderInsights();
+  renderClosingStatus();
+  renderBankReconciliation();
 }
 
 function inyectarNuevosProductos() {
@@ -1651,20 +1653,20 @@ function generateJournalEntryForSale(sale) {
 
   const lines = [];
   // Débito: caja / banco / cuentas por cobrar por el total
-  lines.push({ account: debitAccount, code: state.chartOfAccounts[debitAccount].code, name: state.chartOfAccounts[debitAccount].name, debit: total, credit: 0, desc: `Venta ${sale.id}` });
+  lines.push({ account: debitAccount, code: getAccountCode(debitAccount), name: getAccountName(debitAccount), debit: total, credit: 0, desc: `Venta ${sale.id}` });
 
   // Crédito: ventas (neto)
-  lines.push({ account: 'sales', code: state.chartOfAccounts.sales.code, name: state.chartOfAccounts.sales.name, debit: 0, credit: revenueNet, desc: `Venta ${sale.id}` });
+  lines.push({ account: 'sales', code: getAccountCode('sales'), name: getAccountName('sales'), debit: 0, credit: revenueNet, desc: `Venta ${sale.id}` });
 
   // Crédito: IVA por pagar
   if (iva > 0) {
-    lines.push({ account: 'vatPayable', code: state.chartOfAccounts.vatPayable.code, name: state.chartOfAccounts.vatPayable.name, debit: 0, credit: iva, desc: `IVA venta ${sale.id}` });
+    lines.push({ account: 'vatPayable', code: getAccountCode('vatPayable'), name: getAccountName('vatPayable'), debit: 0, credit: iva, desc: `IVA venta ${sale.id}` });
   }
 
   // Asiento por Costo de Ventas: Debitar COGS y acreditar Inventario
   if (costTotal > 0) {
-    lines.push({ account: 'cogs', code: state.chartOfAccounts.cogs.code, name: state.chartOfAccounts.cogs.name, debit: costTotal, credit: 0, desc: `Costo venta ${sale.id}` });
-    lines.push({ account: 'inventory', code: state.chartOfAccounts.inventory.code, name: state.chartOfAccounts.inventory.name, debit: 0, credit: costTotal, desc: `Salida inventario ${sale.id}` });
+    lines.push({ account: 'cogs', code: getAccountCode('cogs'), name: getAccountName('cogs'), debit: costTotal, credit: 0, desc: `Costo venta ${sale.id}` });
+    lines.push({ account: 'inventory', code: getAccountCode('inventory'), name: getAccountName('inventory'), debit: 0, credit: costTotal, desc: `Salida inventario ${sale.id}` });
   }
 
   const totalDebit = lines.reduce((s, l) => s + Number(l.debit || 0), 0);
@@ -1699,6 +1701,139 @@ function getNextJournalNumber() {
   return n;
 }
 
+function getAccountDefinition(account) {
+  const chart = state.chartOfAccounts || {};
+  for (const groupKey of Object.keys(chart)) {
+    const group = chart[groupKey];
+    if (group && typeof group === 'object' && group[account]) {
+      return group[account];
+    }
+  }
+  return null;
+}
+
+function getAccountCode(account) {
+  const def = getAccountDefinition(account);
+  return def ? def.code : account;
+}
+
+function getAccountName(account) {
+  const def = getAccountDefinition(account);
+  return def ? def.name : account;
+}
+
+function calculatePeriodPL(period = 'month') {
+  const today = new Date();
+  let start, end;
+  if (period === 'month') {
+    start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+  } else if (period === 'year') {
+    start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+    end = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+  } else if (period.from && period.to) {
+    start = period.from; end = period.to;
+  }
+
+  const expenseAccounts = ['cogs', 'gastosOperacionales'];
+  let totalRevenue = 0;
+  const expenseTotals = {};
+  expenseAccounts.forEach(acc => expenseTotals[acc] = 0);
+
+  (state.journalEntries || []).forEach(entry => {
+    if (entry.date < start || entry.date > end) return;
+    entry.lines.forEach(line => {
+      if (line.account === 'sales') {
+        totalRevenue += Number(line.credit || 0) - Number(line.debit || 0);
+      }
+      if (expenseAccounts.includes(line.account)) {
+        expenseTotals[line.account] += Number(line.debit || 0) - Number(line.credit || 0);
+      }
+    });
+  });
+
+  const totalExpenses = expenseAccounts.reduce((sum, acc) => sum + Math.max(0, expenseTotals[acc]), 0);
+  const profit = totalRevenue - totalExpenses;
+  return { start, end, totalRevenue, expenseTotals, totalExpenses, profit };
+}
+
+function createClosingEntry(period = 'month') {
+  const { start, end, totalRevenue, expenseTotals, totalExpenses, profit } = calculatePeriodPL(period);
+  if (totalRevenue === 0 && totalExpenses === 0) {
+    toast('No hay movimientos para generar un cierre en este periodo', 'warning');
+    return null;
+  }
+
+  const lines = [];
+  const profitLossName = getAccountName('profitLoss');
+  const profitLossCode = getAccountCode('profitLoss');
+
+  // Cerrar cuentas de ingresos
+  if (totalRevenue > 0) {
+    lines.push({ account: 'sales', code: getAccountCode('sales'), name: getAccountName('sales'), debit: totalRevenue, credit: 0, desc: `Cierre de ingresos ${period}` });
+    lines.push({ account: 'profitLoss', code: profitLossCode, name: profitLossName, debit: 0, credit: totalRevenue, desc: `Cierre de ingresos ${period}` });
+  }
+
+  // Cerrar cuentas de gastos
+  Object.keys(expenseTotals).forEach(acc => {
+    const amt = Math.max(0, expenseTotals[acc]);
+    if (amt > 0) {
+      lines.push({ account: 'profitLoss', code: profitLossCode, name: profitLossName, debit: amt, credit: 0, desc: `Cierre de gastos ${period}` });
+      lines.push({ account: acc, code: getAccountCode(acc), name: getAccountName(acc), debit: 0, credit: amt, desc: `Cierre de gastos ${period}` });
+    }
+  });
+
+  const totalDebit = lines.reduce((s, l) => s + Number(l.debit || 0), 0);
+  const totalCredit = lines.reduce((s, l) => s + Number(l.credit || 0), 0);
+
+  if (Math.round(totalDebit) !== Math.round(totalCredit)) {
+    toast('Error: el asiento de cierre no balancea', 'error');
+    return null;
+  }
+
+  const entry = {
+    id: 'JE-' + Date.now(),
+    number: getNextJournalNumber(),
+    date: new Date().toISOString(),
+    ref: `Cierre-${period}-${start}`,
+    description: `Asiento de cierre contable (${period}) ${start} → ${end}`,
+    lines,
+    totalDebit,
+    totalCredit,
+    type: 'closing',
+    period: { start, end, period, profit }
+  };
+
+  state.journalEntries = state.journalEntries || [];
+  state.closingEntries = state.closingEntries || [];
+  state.journalEntries.unshift(entry);
+  state.closingEntries.unshift(entry);
+  if (state.journalEntries.length > 1200) state.journalEntries = state.journalEntries.slice(0, 1200);
+  if (state.closingEntries.length > 100) state.closingEntries = state.closingEntries.slice(0, 100);
+  state.lastClosing = { period, start, end, profit, number: entry.number, date: entry.date };
+  localStorage.setItem('motoTallerState', JSON.stringify(state));
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+  toast(`Cierre contable ${period} generado: ${fmt(profit)} de resultado`, 'success');
+  renderClosingStatus();
+  return entry;
+}
+
+function renderClosingStatus() {
+  const container = document.getElementById('acct-closing-status');
+  if (!container) return;
+  const closing = state.lastClosing;
+  if (!closing) {
+    container.innerHTML = '<div>No se ha generado ningún cierre contable aún.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div><strong>Último cierre:</strong> ${closing.period} (${closing.start} → ${closing.end})</div>
+    <div><strong>Número:</strong> ${closing.number}</div>
+    <div><strong>Resultado:</strong> ${fmt(closing.profit)}</div>
+    <div><strong>Fecha de registro:</strong> ${closing.date.split('T')[0]}</div>
+  `;
+}
+
 function exportJournalSIE() {
   // Simple SIE-like exporter (tab-separated, minimal fields)
   const lines = [];
@@ -1708,7 +1843,7 @@ function exportJournalSIE() {
     lines.push(`#VER 1`);
     lines.push(`#TRAN ${entry.number} ${entry.date} "${entry.description}"`);
     entry.lines.forEach(l => {
-      const accCode = (state.chartOfAccounts.assets[l.account]?.code) || (state.chartOfAccounts.revenue && state.chartOfAccounts.revenue[l.account]?.code) || l.code || l.account;
+      const accCode = getAccountCode(l.account) || l.code || l.account;
       lines.push(`#TRANS ${accCode} ${Number(l.debit || 0)} ${Number(l.credit || 0)} "${l.desc || ''}"`);
     });
   });
@@ -1906,7 +2041,8 @@ function renderBalanceSheet() {
 
   const assets = ['cash','bank','accountsReceivable','inventory'].reduce((s, k) => s + (balances[k] || 0), 0);
   const liabilities = ['vatPayable'].reduce((s, k) => s + Math.max(0, -(balances[k] || 0)), 0);
-  const equity = assets - liabilities;
+  const equityAccounts = ['equity','profitLoss'];
+  const equity = equityAccounts.reduce((s, k) => s + (balances[k] || 0), 0);
 
   const container = document.getElementById('acct-balance-report');
   if (container) {
@@ -1914,8 +2050,9 @@ function renderBalanceSheet() {
       <div style="font-weight:700">Balance General (Snapshot)</div>
       <div>Activos: <strong>${fmt(assets)}</strong></div>
       <div>Pasivos: <strong>${fmt(liabilities)}</strong></div>
-      <div>Patrimonio (calculado): <strong>${fmt(equity)}</strong></div>
-      <div style="margin-top:8px;font-size:12px;color:var(--text3)">Detalle: ${JSON.stringify(balances)}</div>
+      <div>Patrimonio: <strong>${fmt(equity)}</strong></div>
+      <div style="margin-top:8px;font-size:13px;color:var(--text3)">Detalle:</div>
+      <div style="font-size:12px;color:var(--text3); white-space:pre-wrap;">${JSON.stringify(balances, null, 2)}</div>
     `;
   } else {
     console.log('Balance', { assets, liabilities, equity, balances });
