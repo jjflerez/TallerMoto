@@ -37,6 +37,7 @@ async function saveToFirebase() {
       inventario: state.inventario,
       ventas: state.ventas,
       nextIds: state.nextIds,
+      loginHistory: state.loginHistory || [],
       usuarios: typeof USERS !== 'undefined' ? USERS : []
     });
 
@@ -63,6 +64,7 @@ async function loadFromFirebase() {
       state.inventario = data.inventario || [];
       state.ventas = data.ventas || [];
       state.nextIds = data.nextIds || { c: 1, m: 1, r: 1, o: 1, f: 1 };
+      state.loginHistory = data.loginHistory || [];
       
       // Actualizar usuarios si existen
       if (data.usuarios && data.usuarios.length > 0) {

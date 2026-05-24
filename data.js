@@ -12,6 +12,7 @@ const state = {
   inventario:[],
   ventas:    [],
   nextIds:   { c: 1, m: 1, r: 1, o: 1, f: 1 },
+  loginHistory: [],
 
   /* Extras de UI */
   editingRepuesto: null,

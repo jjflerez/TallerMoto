@@ -25,6 +25,21 @@ function setUsers(newUsers) {
   localStorage.setItem('motoTallerUsersList', JSON.stringify(USERS));
 }
 
+function registrarLogin(usuario) {
+  if (!window.state) return;
+  state.loginHistory = state.loginHistory || [];
+  const evento = {
+    user: usuario.user,
+    name: usuario.name || usuario.user,
+    role: usuario.role || 'Empleado',
+    when: new Date().toISOString()
+  };
+  state.loginHistory.unshift(evento);
+  state.loginHistory = state.loginHistory.slice(0, 20);
+  localStorage.setItem('motoTallerState', JSON.stringify(state));
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+}
+
 /**
  * Intenta iniciar sesión con las credenciales del formulario.
  */
@@ -53,8 +68,10 @@ function doLogin() {
     return;
   }
 
+  found.lastLogin = new Date().toISOString();
   currentUser = found;
   localStorage.setItem('motoTallerUser', JSON.stringify(found));
+  registrarLogin(found);
 
   /* Animación de salida */
   const loginScreen = document.getElementById('login-screen');

@@ -154,6 +154,30 @@ function renderDashboard() {
     dUtilCard.style.display = 'none';
   }
 
+  const loginHistoryCard = document.getElementById('dash-login-history');
+  const loginHistoryList = document.getElementById('dash-login-history-list');
+  if (loginHistoryCard && loginHistoryList) {
+    if (currentUser?.role === 'Administrador') {
+      const history = (state.loginHistory || []).slice(0, 5);
+      loginHistoryCard.style.display = 'block';
+      if (!history.length) {
+        loginHistoryList.innerHTML = '<div class="empty-state" style="padding:14px;">No hay registros de ingreso aún.</div>';
+      } else {
+        loginHistoryList.innerHTML = history.map(item => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+            <div>
+              <div style="font-weight:700; color:var(--text)">${item.name} <small style="color:var(--text3)">(${item.user})</small></div>
+              <div style="font-size:12px; color:var(--text3)">${item.role}</div>
+            </div>
+            <div style="font-size:12px; color:var(--text2); text-align:right">${formatDateTime(item.when)}</div>
+          </div>
+        `).join('');
+      }
+    } else {
+      loginHistoryCard.style.display = 'none';
+    }
+  }
+
   // Alertas de Stock
   const alertInv = document.getElementById('dash-alertas');
   if (alertInv) {
@@ -1320,6 +1344,15 @@ function populateSelects() {
 function fmt(n) {
   const val = parseFloat(n) || 0;
   return '$' + Math.round(val).toLocaleString('es-CO');
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '–';
+  const dt = new Date(iso);
+  return dt.toLocaleString('es-CO', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
 }
 
 function estadoBadge(estado) {
