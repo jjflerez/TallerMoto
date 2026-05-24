@@ -14,6 +14,22 @@ const state = {
   nextIds:   { c: 1, m: 1, r: 1, o: 1, f: 1 },
   loginHistory: [],
 
+  /* Contabilidad básica */
+  chartOfAccounts: {
+    cash: { code: '1010', name: 'Caja', type: 'asset' },
+    bank: { code: '1020', name: 'Banco - Cuenta Corriente', type: 'asset' },
+    accountsReceivable: { code: '1100', name: 'Clientes - Cuentas x Cobrar', type: 'asset' },
+    inventory: { code: '1200', name: 'Inventario', type: 'asset' },
+    cogs: { code: '5000', name: 'Costo de Ventas', type: 'expense' },
+    sales: { code: '4000', name: 'Ventas (Ingresos)', type: 'revenue' },
+    vatPayable: { code: '2100', name: 'IVA por Pagar', type: 'liability' },
+    equity: { code: '3000', name: 'Patrimonio / Utilidades Acumuladas', type: 'equity' }
+  },
+  journalEntries: [],
+  bankAccounts: [
+    { id: 'B001', name: 'Banco - Cuenta Principal', balance: 0, transactions: [] }
+  ],
+
   /* Extras de UI */
   editingRepuesto: null,
 };

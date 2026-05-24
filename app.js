@@ -1044,6 +1044,24 @@ function savePosSale() {
     estadoPago: pago === 'Crédito' ? 'Pendiente' : 'Pagado'
   });
 
+  // Generar asiento contable automático por la venta
+  try {
+    const ventaRecien = state.ventas[state.ventas.length - 1];
+    generateJournalEntryForSale(ventaRecien);
+
+    // Si la forma de pago es transferencia o nequi, registrar en la cuenta bancaria
+    if (pago === 'Transferencia' || pago === 'Nequi / Daviplata') {
+      const bank = state.bankAccounts && state.bankAccounts[0];
+      if (bank) {
+        bank.balance = (bank.balance || 0) + total;
+        bank.transactions = bank.transactions || [];
+        bank.transactions.push({ id: 'T' + Date.now(), date: new Date().toISOString(), type: pago, amount: total, ref: id });
+      }
+    }
+  } catch (e) {
+    console.error('Error generando asiento contable:', e);
+  }
+
   posItems = [];
   renderPosCart();
   closeModal('modal-cobro');
@@ -1606,6 +1624,178 @@ function renderPosCategories() {
 
   container.innerHTML = html;
 }
+
+/* =========================
+   Contabilidad - Asientos, reportes y exportes
+   ========================= */
+
+function getInventoryCostForSale(sale) {
+  return (sale.items || []).reduce((s, i) => {
+    const p = state.inventario.find(x => x.id === i.id);
+    return s + (p ? (Number(p.costo || 0) * Number(i.qty || 1)) : 0);
+  }, 0);
+}
+
+function generateJournalEntryForSale(sale) {
+  if (!sale || !state.chartOfAccounts) return;
+  const when = new Date().toISOString();
+  const costTotal = getInventoryCostForSale(sale);
+  const iva = Number(sale.iva || 0);
+  const total = Number(sale.total || 0);
+  const revenueNet = Math.max(0, total - iva);
+
+  const pago = sale.pago || 'Efectivo';
+  let debitAccount = 'cash';
+  if (pago === 'Crédito') debitAccount = 'accountsReceivable';
+  if (pago === 'Transferencia' || pago === 'Nequi / Daviplata') debitAccount = 'bank';
+
+  const lines = [];
+  // Débito: caja / banco / cuentas por cobrar por el total
+  lines.push({ account: debitAccount, code: state.chartOfAccounts[debitAccount].code, name: state.chartOfAccounts[debitAccount].name, debit: total, credit: 0, desc: `Venta ${sale.id}` });
+
+  // Crédito: ventas (neto)
+  lines.push({ account: 'sales', code: state.chartOfAccounts.sales.code, name: state.chartOfAccounts.sales.name, debit: 0, credit: revenueNet, desc: `Venta ${sale.id}` });
+
+  // Crédito: IVA por pagar
+  if (iva > 0) {
+    lines.push({ account: 'vatPayable', code: state.chartOfAccounts.vatPayable.code, name: state.chartOfAccounts.vatPayable.name, debit: 0, credit: iva, desc: `IVA venta ${sale.id}` });
+  }
+
+  // Asiento por Costo de Ventas: Debitar COGS y acreditar Inventario
+  if (costTotal > 0) {
+    lines.push({ account: 'cogs', code: state.chartOfAccounts.cogs.code, name: state.chartOfAccounts.cogs.name, debit: costTotal, credit: 0, desc: `Costo venta ${sale.id}` });
+    lines.push({ account: 'inventory', code: state.chartOfAccounts.inventory.code, name: state.chartOfAccounts.inventory.name, debit: 0, credit: costTotal, desc: `Salida inventario ${sale.id}` });
+  }
+
+  const totalDebit = lines.reduce((s, l) => s + Number(l.debit || 0), 0);
+  const totalCredit = lines.reduce((s, l) => s + Number(l.credit || 0), 0);
+
+  const entry = {
+    id: 'JE-' + Date.now(),
+    date: when,
+    ref: sale.id,
+    description: `Asiento por venta ${sale.id}`,
+    lines,
+    totalDebit,
+    totalCredit
+  };
+
+  state.journalEntries = state.journalEntries || [];
+  state.journalEntries.unshift(entry);
+  // Mantener histórico razonable
+  if (state.journalEntries.length > 1000) state.journalEntries = state.journalEntries.slice(0, 1000);
+  localStorage.setItem('motoTallerState', JSON.stringify(state));
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+  toast('Asiento contable generado (automático)', 'info');
+}
+
+function exportJournalCSV() {
+  const rows = [];
+  rows.push(['Fecha','Ref','AsientoID','Cuenta','Código','Debe','Haber','Descripción']);
+  (state.journalEntries || []).forEach(entry => {
+    entry.lines.forEach(line => {
+      rows.push([entry.date, entry.ref, entry.id, line.name, line.code, Number(line.debit || 0), Number(line.credit || 0), line.desc || entry.description || '']);
+    });
+  });
+
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `asientos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exportado CSV de asientos', 'success');
+}
+
+function exportJournalSAI() {
+  // Export simple SAI-like (semicolons) for contadores: fecha;asiento;cuenta;debe;haber;descripcion
+  const lines = [];
+  lines.push('SAI_EXPORT;MotoTaller');
+  (state.journalEntries || []).forEach(entry => {
+    entry.lines.forEach(line => {
+      lines.push([entry.date, entry.id, line.code, Number(line.debit || 0), Number(line.credit || 0), (line.desc || entry.description || '')].join(';'));
+    });
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `asientos_sai_${new Date().toISOString().slice(0,10)}.sai.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exportado SAI (formato simple)', 'success');
+}
+
+function renderPLReport(period = 'month') {
+  // period: 'month' or 'year' or custom {from,to}
+  const today = new Date();
+  let start, end;
+  if (period === 'month') {
+    start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+  } else if (period === 'year') {
+    start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+    end = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+  } else if (period.from && period.to) {
+    start = period.from; end = period.to;
+  }
+
+  const ventas = (state.ventas || []).filter(v => v.fecha >= start && v.fecha <= end);
+  const totalVenta = ventas.reduce((s, v) => s + Number(v.total || 0), 0);
+  const totalIVA = ventas.reduce((s, v) => s + Number(v.iva || 0), 0);
+  const costo = ventas.reduce((s, v) => s + getInventoryCostForSale(v), 0);
+  const utilidadBruta = totalVenta - costo - totalIVA;
+
+  const container = document.getElementById('acct-pl-report');
+  if (container) {
+    container.innerHTML = `
+      <div style="font-weight:700">Reporte P&L (${start} → ${end})</div>
+      <div>Ventas Totales: <strong>${fmt(totalVenta)}</strong></div>
+      <div>IVA Recaudado: <strong>${fmt(totalIVA)}</strong></div>
+      <div>Costo de Ventas: <strong>${fmt(costo)}</strong></div>
+      <div style="margin-top:8px; font-size:16px">Utilidad Bruta: <strong>${fmt(utilidadBruta)}</strong></div>
+    `;
+  } else {
+    console.log('P&L', { start, end, totalVenta, totalIVA, costo, utilidadBruta });
+  }
+  return { start, end, totalVenta, totalIVA, costo, utilidadBruta };
+}
+
+function renderBalanceSheet() {
+  // Calcular saldos por cuentas usando journalEntries
+  const balances = {};
+  (state.journalEntries || []).forEach(entry => {
+    entry.lines.forEach(l => {
+      balances[l.account] = balances[l.account] || 0;
+      balances[l.account] += (Number(l.debit || 0) - Number(l.credit || 0));
+    });
+  });
+
+  // Añadir inventario valorizado directo
+  const inventoryVal = (state.inventario || []).reduce((s, r) => s + (Number(r.stock || 0) * Number(r.costo || 0)), 0);
+  balances['inventory'] = Math.max(balances['inventory'] || 0, inventoryVal);
+
+  const assets = ['cash','bank','accountsReceivable','inventory'].reduce((s, k) => s + (balances[k] || 0), 0);
+  const liabilities = ['vatPayable'].reduce((s, k) => s + Math.max(0, -(balances[k] || 0)), 0);
+  const equity = assets - liabilities;
+
+  const container = document.getElementById('acct-balance-report');
+  if (container) {
+    container.innerHTML = `
+      <div style="font-weight:700">Balance General (Snapshot)</div>
+      <div>Activos: <strong>${fmt(assets)}</strong></div>
+      <div>Pasivos: <strong>${fmt(liabilities)}</strong></div>
+      <div>Patrimonio (calculado): <strong>${fmt(equity)}</strong></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)">Detalle: ${JSON.stringify(balances)}</div>
+    `;
+  } else {
+    console.log('Balance', { assets, liabilities, equity, balances });
+  }
+  return { assets, liabilities, equity, balances };
+}
+
 
 function setPosCategory(cat) {
   state.selectedPosCategory = cat;

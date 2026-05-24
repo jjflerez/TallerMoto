@@ -80,6 +80,9 @@
     <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas">
       <span class="nav-icon">🧾</span> Ventas
     </button>
+    <button class="nav-item" onclick="showPage('contabilidad',this)" id="nav-contabilidad">
+      <span class="nav-icon">💼</span> Contabilidad
+    </button>
     <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none">
       <span class="nav-icon">👥</span> Usuarios
     </button>
@@ -102,6 +105,28 @@
         <span style="color:var(--text3); font-size:12px; margin-right:8px">Buscar en todo:</span>
         <input class="search-bar" style="width:300px" placeholder="Placa, Cliente o Repuesto..." id="global-search" oninput="handleGlobalSearch()"/>
         <div id="global-search-results" class="card" style="position:absolute; top:50px; right:0; width:400px; z-index:1000; display:none; padding:10px; max-height:400px; overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <!-- ── CONTABILIDAD ── -->
+    <div class="page" id="page-contabilidad" style="padding:20px; display:none">
+      <div class="section-header">
+        <h3>Contabilidad</h3>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="renderPLReport('month')">📈 Generar P&L (Mes)</button>
+          <button class="btn btn-ghost" onclick="renderPLReport('year')">📈 Generar P&L (Año)</button>
+          <button class="btn btn-primary" onclick="renderBalanceSheet()">📊 Generar Balance</button>
+          <button class="btn btn-ghost" onclick="exportJournalCSV()">⬇️ Exportar Asientos CSV</button>
+          <button class="btn btn-ghost" onclick="exportJournalSAI()">⬇️ Exportar Asientos SAI</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div id="acct-pl-report">Presiona "Generar P&L" para ver resultados.</div>
+      </div>
+      <div class="card">
+        <div id="acct-balance-report">Presiona "Generar Balance" para ver resultados.</div>
       </div>
     </div>
 
