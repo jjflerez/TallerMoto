@@ -16,18 +16,30 @@ const state = {
 
   /* Contabilidad básica */
   chartOfAccounts: {
-    cash: { code: '1010', name: 'Caja', type: 'asset' },
-    bank: { code: '1020', name: 'Banco - Cuenta Corriente', type: 'asset' },
-    accountsReceivable: { code: '1100', name: 'Clientes - Cuentas x Cobrar', type: 'asset' },
-    inventory: { code: '1200', name: 'Inventario', type: 'asset' },
-    cogs: { code: '5000', name: 'Costo de Ventas', type: 'expense' },
-    sales: { code: '4000', name: 'Ventas (Ingresos)', type: 'revenue' },
-    vatPayable: { code: '2100', name: 'IVA por Pagar', type: 'liability' },
-    equity: { code: '3000', name: 'Patrimonio / Utilidades Acumuladas', type: 'equity' }
+    assets: {
+      cash: { code: '1010', name: 'Caja', type: 'asset' },
+      bank: { code: '1020', name: 'Banco - Cuenta Corriente', type: 'asset' },
+      accountsReceivable: { code: '1100', name: 'Clientes - Cuentas x Cobrar', type: 'asset' },
+      inventory: { code: '1200', name: 'Inventario', type: 'asset' }
+    },
+    liabilities: {
+      vatPayable: { code: '2100', name: 'IVA por Pagar', type: 'liability' }
+    },
+    equity: {
+      equity: { code: '3000', name: 'Patrimonio / Utilidades Acumuladas', type: 'equity' }
+    },
+    revenue: {
+      sales: { code: '4000', name: 'Ventas (Ingresos)', type: 'revenue' }
+    },
+    expenses: {
+      cogs: { code: '5000', name: 'Costo de Ventas', type: 'expense' },
+      gastosOperacionales: { code: '5100', name: 'Gastos Operacionales', type: 'expense' }
+    }
   },
   journalEntries: [],
+  nextJournalNumber: 1,
   bankAccounts: [
-    { id: 'B001', name: 'Banco - Cuenta Principal', balance: 0, transactions: [] }
+    { id: 'B001', name: 'Banco - Cuenta Principal', balance: 0, transactions: [], reconciled: [] }
   ],
 
   /* Extras de UI */

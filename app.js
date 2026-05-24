@@ -1672,6 +1672,7 @@ function generateJournalEntryForSale(sale) {
 
   const entry = {
     id: 'JE-' + Date.now(),
+    number: getNextJournalNumber(),
     date: when,
     ref: sale.id,
     description: `Asiento por venta ${sale.id}`,
@@ -1687,6 +1688,132 @@ function generateJournalEntryForSale(sale) {
   localStorage.setItem('motoTallerState', JSON.stringify(state));
   if (typeof saveToFirebase === 'function') saveToFirebase();
   toast('Asiento contable generado (automático)', 'info');
+}
+
+function getNextJournalNumber() {
+  if (!state.nextJournalNumber) state.nextJournalNumber = 1;
+  const n = state.nextJournalNumber;
+  state.nextJournalNumber = n + 1;
+  localStorage.setItem('motoTallerState', JSON.stringify(state));
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+  return n;
+}
+
+function exportJournalSIE() {
+  // Simple SIE-like exporter (tab-separated, minimal fields)
+  const lines = [];
+  lines.push(';FLAGGA 0');
+  lines.push(`;PROGRAM "MotoTaller" "1.0"`);
+  (state.journalEntries || []).forEach(entry => {
+    lines.push(`#VER 1`);
+    lines.push(`#TRAN ${entry.number} ${entry.date} "${entry.description}"`);
+    entry.lines.forEach(l => {
+      const accCode = (state.chartOfAccounts.assets[l.account]?.code) || (state.chartOfAccounts.revenue && state.chartOfAccounts.revenue[l.account]?.code) || l.code || l.account;
+      lines.push(`#TRANS ${accCode} ${Number(l.debit || 0)} ${Number(l.credit || 0)} "${l.desc || ''}"`);
+    });
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `asientos_sie_${new Date().toISOString().slice(0,10)}.sie.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Export SIE generado', 'success');
+}
+
+/* Bank reconciliation UI helpers */
+function renderBankReconciliation() {
+  const container = document.getElementById('acct-bank-recon');
+  if (!container) return;
+  const banks = state.bankAccounts || [];
+  container.innerHTML = banks.map(b => `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${b.name}</strong> — Saldo: ${fmt(b.balance)}</div>
+        <div><button class="btn btn-ghost btn-sm" onclick="exportBankTransactions('${b.id}')">Exportar</button></div>
+      </div>
+      <div style="margin-top:8px">${(b.transactions || []).map(tx => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px">${tx.date.split('T')[0]} — ${tx.type} — ${fmt(tx.amount)} <small style="color:var(--text3)">(${tx.ref || ''})</small></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="font-size:12px;color:${(tx.reconciled ? 'var(--green)' : 'var(--text3)')}">${tx.reconciled ? 'Conciliado' : 'Pendiente'}</div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleTransactionReconciled('${b.id}','${tx.id}')">Marcar</button>
+          </div>
+        </div>
+      `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTransactionReconciled(bankId, txId) {
+  const bank = (state.bankAccounts || []).find(b => b.id === bankId);
+  if (!bank) return;
+  const tx = (bank.transactions || []).find(t => t.id === txId);
+  if (!tx) return;
+  tx.reconciled = !tx.reconciled;
+  // track reconciled ids
+  bank.reconciled = bank.reconciled || [];
+  if (tx.reconciled) bank.reconciled.push(tx.id); else bank.reconciled = bank.reconciled.filter(x => x !== tx.id);
+  localStorage.setItem('motoTallerState', JSON.stringify(state));
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+  renderBankReconciliation();
+  toast(tx.reconciled ? 'Transacción conciliada' : 'Marcada como pendiente', 'success');
+}
+
+function exportBankTransactions(bankId) {
+  const bank = (state.bankAccounts || []).find(b => b.id === bankId);
+  if (!bank) return;
+  const rows = [];
+  rows.push(['Fecha','ID','Tipo','Monto','Ref','Conciliado']);
+  (bank.transactions || []).forEach(t => rows.push([t.date, t.id, t.type, t.amount, t.ref || '', t.reconciled ? 'Sí' : 'No']));
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `banco_${bankId}_transacciones_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exportado transacciones bancarias', 'success');
+}
+
+/* Reportes avanzados */
+function renderPLByAccount(period = 'month') {
+  const res = renderPLReport(period);
+  const container = document.getElementById('acct-pl-by-account');
+  if (!container) return;
+  // Agrupar por cuenta de ingreso/expense usando journalEntries
+  const totals = {};
+  (state.journalEntries || []).forEach(entry => {
+    if (!entry.date) return;
+    // filter by period if needed (simple month/year)
+    totals[entry.date] = totals[entry.date] || 0; // placeholder, but we will map by account
+    entry.lines.forEach(l => {
+      const key = l.account || l.code || l.name;
+      totals[key] = (totals[key] || 0) + (Number(l.credit || 0) - Number(l.debit || 0));
+    });
+  });
+  container.innerHTML = '<div style="font-weight:700">P&L por cuenta (resumido)</div>' + Object.keys(totals).map(k => `<div>${k}: <strong>${fmt(totals[k])}</strong></div>`).join('');
+}
+
+function renderCashFlow(period = 'month') {
+  // Muy simple: sumar entradas/salidas desde bank.transactions
+  const container = document.getElementById('acct-cashflow');
+  if (!container) return;
+  const banks = state.bankAccounts || [];
+  let inflow = 0, outflow = 0;
+  banks.forEach(b => (b.transactions || []).forEach(t => {
+    const amt = Number(t.amount || 0);
+    if (amt > 0) inflow += amt; else outflow += Math.abs(amt);
+  }));
+  container.innerHTML = `
+    <div style="font-weight:700">Flujo de Caja (Periodo: ${period})</div>
+    <div>Entradas: <strong>${fmt(inflow)}</strong></div>
+    <div>Salidas: <strong>${fmt(outflow)}</strong></div>
+    <div>Saldo Neto: <strong>${fmt(inflow - outflow)}</strong></div>
+  `;
 }
 
 function exportJournalCSV() {

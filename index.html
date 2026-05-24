@@ -120,6 +120,7 @@
           <button class="btn btn-primary" onclick="renderBalanceSheet()">📊 Generar Balance</button>
           <button class="btn btn-ghost" onclick="exportJournalCSV()">⬇️ Exportar Asientos CSV</button>
           <button class="btn btn-ghost" onclick="exportJournalSAI()">⬇️ Exportar Asientos SAI</button>
+          <button class="btn btn-ghost" onclick="exportJournalSIE()">⬇️ Exportar SIE</button>
         </div>
       </div>
       <div class="card" style="margin-bottom:12px">
@@ -127,6 +128,30 @@
       </div>
       <div class="card">
         <div id="acct-balance-report">Presiona "Generar Balance" para ver resultados.</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>P&L por cuenta</strong>
+            <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="renderPLByAccount('month')">Actualizar</button></div>
+          </div>
+          <div id="acct-pl-by-account">--</div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>Flujo de Caja</strong>
+            <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="renderCashFlow('month')">Actualizar</button></div>
+          </div>
+          <div id="acct-cashflow">--</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Conciliación Bancaria</strong>
+          <div><button class="btn btn-ghost btn-sm" onclick="renderBankReconciliation()">Refrescar</button></div>
+        </div>
+        <div id="acct-bank-recon">Presiona "Refrescar" para cargar movimientos bancarios.</div>
       </div>
     </div>
 
