@@ -80,6 +80,7 @@ function refresh() {
   renderInsights();
   renderClosingStatus();
   renderBankReconciliation();
+  renderCuentasCobrar();
 }
 
 function inyectarNuevosProductos() {
@@ -2502,6 +2503,105 @@ function generarCierreCaja() {
   }
   
   openModal('modal-cierre');
+}
+
+/* ── Cuentas por Cobrar ────────────────────────────────────── */
+function renderCuentasCobrar() {
+  const tbody = document.getElementById('tabla-cuentas-cobrar');
+  if(!tbody) return;
+  
+  const creditos = state.ventas.filter(v => v.pago === 'Crédito' && (v.saldoPendiente === undefined || v.saldoPendiente > 0));
+  
+  let totalDeuda = 0;
+  let totalAbonos = 0;
+
+  if (creditos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No hay cuentas por cobrar pendientes</div></td></tr>`;
+    document.getElementById('c-total-deuda').textContent = '$0';
+    document.getElementById('c-total-abonos').textContent = '$0';
+    return;
+  }
+  
+  tbody.innerHTML = creditos.map(c => {
+    const total = c.total;
+    const abonado = c.abonado || 0;
+    const saldo = c.saldoPendiente !== undefined ? c.saldoPendiente : total;
+    const clienteName = state.clientes.find(cl => cl.id === c.cliente)?.nombre || 'Desconocido';
+    
+    totalDeuda += saldo;
+    totalAbonos += abonado;
+
+    return `
+      <tr>
+        <td><strong>#${c.id}</strong></td>
+        <td>${c.fecha.split('T')[0]}</td>
+        <td>${clienteName}</td>
+        <td>${fmt(total)}</td>
+        <td style="color:var(--green)">${fmt(abonado)}</td>
+        <td style="color:var(--red); font-weight:bold">${fmt(saldo)}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="abrirModalAbono('${c.id}', ${saldo})">💸 Hacer Abono</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const labelDeuda = document.getElementById('c-total-deuda');
+  if (labelDeuda) labelDeuda.textContent = fmt(totalDeuda);
+  const labelAbono = document.getElementById('c-total-abonos');
+  if (labelAbono) labelAbono.textContent = fmt(totalAbonos);
+}
+
+function abrirModalAbono(facturaId, saldo) {
+  document.getElementById('abono-factura-id').value = facturaId;
+  document.getElementById('abono-saldo-txt').textContent = \`Saldo: \${fmt(saldo)}\`;
+  document.getElementById('abono-valor').value = '';
+  document.getElementById('abono-metodo').value = 'Efectivo';
+  openModal('modal-abono');
+}
+
+function guardarAbono() {
+  const facturaId = document.getElementById('abono-factura-id').value;
+  const valor = parseFloat(document.getElementById('abono-valor').value);
+  const metodo = document.getElementById('abono-metodo').value;
+  
+  if(isNaN(valor) || valor <= 0) {
+    toast('Ingresa un valor válido', 'error');
+    return;
+  }
+  
+  const venta = state.ventas.find(v => v.id === facturaId);
+  if(!venta) return;
+  
+  const saldoActual = venta.saldoPendiente !== undefined ? venta.saldoPendiente : venta.total;
+  
+  if(valor > saldoActual) {
+    toast('El abono no puede ser mayor al saldo', 'error');
+    return;
+  }
+  
+  venta.abonado = (venta.abonado || 0) + valor;
+  venta.saldoPendiente = saldoActual - valor;
+  
+  if (venta.saldoPendiente === 0) {
+    venta.estadoPago = 'Pagado';
+  }
+
+  // Registrar el abono como un ingreso del día para el cierre de caja
+  state.ventas.push({
+    id: 'ABN' + Date.now(),
+    facturaRef: facturaId,
+    fecha: new Date().toISOString().split('T')[0], // hoy
+    cliente: venta.cliente,
+    pago: metodo,
+    total: valor,
+    isAbono: true,
+    items: [{ desc: \`Abono a Factura #\${facturaId}\`, qty: 1, precio: valor, subtotal: valor }]
+  });
+  
+  closeModal('modal-abono');
+  toast('Abono registrado exitosamente', 'success');
+  refresh();
 }
 
 function imprimirCierreCaja() {

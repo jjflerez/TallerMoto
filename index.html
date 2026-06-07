@@ -578,6 +578,48 @@
           </div>
         </div>
 
+        <!-- ── CONTABILIDAD ── -->
+        <div class="page" id="page-contabilidad" style="display:none; flex-direction:column; height:100%">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-shrink:0;">
+            <h2 style="font-family:var(--font-cond); font-size:24px;">Contabilidad & Cuentas por Cobrar</h2>
+            <div>
+               <button class="btn btn-ghost" onclick="generarCierreCaja()">💰 Cierre de Caja</button>
+            </div>
+          </div>
+
+          <div class="stat-grid" style="grid-template-columns:repeat(2,1fr); flex-shrink:0;">
+            <div class="stat-card orange">
+              <div class="label">Total Fiaos / Por Cobrar</div>
+              <div class="value" id="c-total-deuda">$0</div>
+            </div>
+            <div class="stat-card green">
+              <div class="label">Abonos Recibidos</div>
+              <div class="value" id="c-total-abonos">$0</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column; margin-top:20px;">
+            <div class="table-wrap" style="flex:1; overflow-y:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Factura</th>
+                    <th>Fecha Venta</th>
+                    <th>Cliente</th>
+                    <th>Total Deuda</th>
+                    <th>Abonado</th>
+                    <th>Saldo Pendiente</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-cuentas-cobrar">
+                  <tr><td colspan="7">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /content -->
 
     </div><!-- /content -->
@@ -589,6 +631,39 @@
   <!-- ══════════════════════════════════════════════
      MODALES
 ══════════════════════════════════════════════ -->
+
+  <!-- Modal: Registrar Abono -->
+  <div class="modal-overlay" id="modal-abono">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3>Registrar Abono</h3>
+        <button class="close-btn" onclick="closeModal('modal-abono')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align:center; margin-bottom:20px; font-size:24px; font-weight:800; color:var(--orange)" id="abono-saldo-txt">
+          Saldo: $0
+        </div>
+        <input type="hidden" id="abono-factura-id" />
+        <div class="form-grid">
+          <div class="field">
+            <label>Valor a Abonar / Pagar ($)</label>
+            <input id="abono-valor" type="number" placeholder="Ej. 50000" />
+          </div>
+          <div class="field">
+            <label>Método de Pago</label>
+            <select id="abono-metodo" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border)">
+              <option value="Efectivo">Caja Fuerte / Efectivo</option>
+              <option value="Transferencia">Cuenta Bancaria / Nequi / App</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-abono')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarAbono()">Registrar Pago</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: Nuevo / Editar Cliente -->
   <div class="modal-overlay" id="modal-cliente">
@@ -930,7 +1005,7 @@
   <!-- Librería para exportar a Excel (SheetJS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 
   <!-- Contenedor para impresión de ticket -->
   <div id="ticket-print" class="ticket-print"></div>
