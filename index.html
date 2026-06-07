@@ -13,6 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1048/1048313.png">
   <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 
@@ -1010,6 +1012,20 @@
   <!-- Contenedor para impresión de ticket -->
   <div id="ticket-print" class="ticket-print"></div>
 
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registrado con éxito');
+          })
+          .catch(error => {
+            console.log('Fallo al registrar ServiceWorker:', error);
+          });
+      });
+    }
+  </script>
 </body>
 
 </html>
