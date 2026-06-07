@@ -272,7 +272,7 @@ body {
 .collapse-btn:hover { background: var(--bg3); color: var(--primary); transform: scale(1.1); }
 
 .sidebar { transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
-.sidebar.collapsed { width: 88px; overflow-x: hidden; }
+.sidebar.collapsed { width: 88px; } /* REMOVED overflow-x: hidden to prevent button clipping */
 
 /* Transiciones suaves para texto */
 .sidebar .sidebar-logo h1, .sidebar .sidebar-logo span,
@@ -287,15 +287,16 @@ body {
 .sidebar.collapsed .nav-section, .sidebar.collapsed #sidebar-user-name, 
 .sidebar.collapsed #sidebar-user-role, .sidebar.collapsed .nav-text, 
 .sidebar.collapsed .badge { 
-  opacity: 0; width: 0; display: none; pointer-events: none;
+  opacity: 0; width: 0; display: none; pointer-events: none; margin: 0; padding: 0;
 }
 
 /* Ajustes a los botones en modo colapsado */
-.sidebar.collapsed .nav-item { width: 48px; height: 48px; padding: 0; justify-content: center; margin: 6px auto; border-radius: 12px; }
-.sidebar.collapsed .nav-icon { margin: 0; font-size: 22px; }
-.sidebar.collapsed .collapse-btn { transform: rotate(180deg); }
-.sidebar.collapsed .sidebar-logo { padding: 28px 0 20px; justify-content: center; display: flex; }
-.sidebar.collapsed .logo-icon { margin-bottom: 0; }
+.sidebar.collapsed .nav-item { width: 48px; height: 48px; padding: 0; justify-content: center; margin: 8px auto; border-radius: 14px; }
+.sidebar.collapsed .nav-item.active { box-shadow: none; background: var(--primary-light); }
+.sidebar.collapsed .nav-icon { margin: 0; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+.sidebar.collapsed .collapse-btn { transform: rotate(180deg); right: -14px; left: auto; margin: 0; top: 32px; }
+.sidebar.collapsed .sidebar-logo { padding: 28px 0 20px; align-items: center; display: flex; flex-direction: column; }
+.sidebar.collapsed .logo-icon { margin-bottom: 0; width: 42px; height: 42px; font-size: 20px; }
 .sidebar.collapsed .sidebar-footer { padding: 20px 10px; }
 .sidebar.collapsed .footer-actions .btn { padding: 12px 0; justify-content: center; width: 100%; border-radius: 12px; }
 
