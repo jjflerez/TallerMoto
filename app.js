@@ -2399,6 +2399,141 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/* ── Gastos ────────────────────────────────────────────────── */
+function saveGasto() {
+  const concepto = document.getElementById('g-concepto').value.trim();
+  const valor = parseFloat(document.getElementById('g-valor').value);
+  const metodo = document.getElementById('g-metodo').value;
+
+  if (!concepto || isNaN(valor) || valor <= 0) {
+    toast('Por favor, ingresa un concepto y valor válido', 'error');
+    return;
+  }
+
+  state.gastos = state.gastos || [];
+  const id = 'G' + Date.now();
+  
+  state.gastos.push({
+    id,
+    concepto,
+    valor,
+    metodo,
+    fecha: new Date().toISOString().split('T')[0],
+    timestamp: Date.now()
+  });
+
+  document.getElementById('g-concepto').value = '';
+  document.getElementById('g-valor').value = '';
+  closeModal('modal-gasto');
+  toast('Gasto registrado correctamente', 'success');
+  refresh();
+}
+
+/* ── Cierre de Caja ────────────────────────────────────────── */
+function generarCierreCaja() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const ventasHoy = state.ventas.filter(v => v.fecha === hoy);
+  state.gastos = state.gastos || [];
+  const gastosHoy = state.gastos.filter(g => g.fecha === hoy);
+  
+  let efectivo = 0, trans = 0, tj = 0, fiado = 0, totalIngresos = 0;
+  
+  ventasHoy.forEach(v => {
+    if (v.pago === 'Crédito') {
+      fiado += v.total;
+    } else {
+      totalIngresos += v.total;
+      if (v.pago === 'Efectivo') efectivo += v.total;
+      else if (v.pago === 'Tarjeta') tj += v.total;
+      else trans += v.total; // Nequi, Daviplata, Transferencia
+    }
+  });
+
+  let gastosEfectivo = 0, gastosTrans = 0, totalGastos = 0;
+  gastosHoy.forEach(g => {
+    totalGastos += g.valor;
+    if (g.metodo === 'Efectivo') gastosEfectivo += g.valor;
+    else gastosTrans += g.valor;
+  });
+
+  const netoEfectivo = efectivo - gastosEfectivo;
+  const netoTrans = trans - gastosTrans;
+
+  const body = document.getElementById('cierre-body');
+  if (body) {
+    body.innerHTML = `
+      <div style="text-align:center; margin-bottom:20px">
+        <div style="font-size:32px; font-weight:800; color:var(--primary)">${fmt(totalIngresos - totalGastos)}</div>
+        <div style="color:var(--text3); font-size:12px">Total Neto en Caja (${hoy})</div>
+      </div>
+      
+      <div style="font-size:12px; font-weight:bold; color:var(--text3); margin-top:15px; margin-bottom:5px; text-transform:uppercase;">Resumen de Ingresos</div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border)">
+        <span>💵 Efectivo Recibido</span> <strong>${fmt(efectivo)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border)">
+        <span>📱 Transferencias / Tarjeta</span> <strong>${fmt(trans + tj)}</strong>
+      </div>
+      
+      <div style="font-size:12px; font-weight:bold; color:var(--red); margin-top:15px; margin-bottom:5px; text-transform:uppercase;">Resumen de Gastos (Egresos)</div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); color:var(--red)">
+        <span>📉 Gastos en Efectivo</span> <strong>- ${fmt(gastosEfectivo)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); color:var(--red)">
+        <span>📉 Gastos por Banco</span> <strong>- ${fmt(gastosTrans)}</strong>
+      </div>
+
+      <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-top:15px; margin-bottom:5px; text-transform:uppercase;">Caja Final Física (Lo que debe haber)</div>
+      <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--primary); background:var(--bg3); font-size:18px">
+        <span style="padding-left:10px">💵 Efectivo Físico</span> <strong style="padding-right:10px">${fmt(netoEfectivo)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--primary); background:var(--bg3); font-size:18px">
+        <span style="padding-left:10px">📱 Banco Neto</span> <strong style="padding-right:10px">${fmt(netoTrans + tj)}</strong>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; padding:10px 0; margin-top:10px; background:#fff3cd; border-radius:8px">
+        <span style="padding-left:10px">📒 Fiaos (Crédito)</span> <strong style="color:var(--orange); padding-right:10px">${fmt(fiado)}</strong>
+      </div>
+      
+      <div style="margin-top:20px; font-size:12px; color:var(--text3); text-align:center">
+        Ventas cobradas: ${ventasHoy.length} | Gastos realizados: ${gastosHoy.length}
+      </div>
+    `;
+  }
+  
+  openModal('modal-cierre');
+}
+
+function imprimirCierreCaja() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const body = document.getElementById('cierre-body').innerHTML;
+  
+  const printWindow = window.open('', '_blank', 'width=400,height=600');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Cierre de Caja ${hoy}</title>
+        <style>
+          body { font-family: monospace; padding: 20px; text-align: center; color: #000; font-size: 14px; }
+          .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; }
+          h2 { margin: 0 0 5px 0; font-size: 18px; }
+          .totals { font-size: 24px; font-weight: bold; margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <h2>MOTO CARIBE</h2>
+        <p style="margin:0 0 20px 0; font-size:12px; border-bottom:1px dashed #000; padding-bottom:10px">CIERRE DE CAJA - ${hoy}</p>
+        ${body.replace(/var\(--[a-zA-Z0-9-]+\)/g, '#000').replace(/background:var\(--bg3\)/g, '')}
+        <p style="margin-top:30px; font-size:10px; border-top:1px dashed #000; padding-top:10px">Generado por el Sistema</p>
+        <script>
+          setTimeout(() => { window.print(); window.close(); }, 500);
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
 // Interceptar refresh global de manera segura
 const oldRefresh = typeof refresh === 'function' ? refresh : null;
 refresh = function() {

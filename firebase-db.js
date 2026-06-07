@@ -36,6 +36,7 @@ async function saveToFirebase() {
       motos: state.motos,
       inventario: state.inventario,
       ventas: state.ventas,
+      gastos: state.gastos || [],
       nextIds: state.nextIds,
       loginHistory: state.loginHistory || [],
       usuarios: typeof USERS !== 'undefined' ? USERS : []
@@ -63,6 +64,7 @@ async function loadFromFirebase() {
       state.motos = data.motos || [];
       state.inventario = data.inventario || [];
       state.ventas = data.ventas || [];
+      state.gastos = data.gastos || [];
       state.nextIds = data.nextIds || { c: 1, m: 1, r: 1, o: 1, f: 1 };
       state.loginHistory = data.loginHistory || [];
       

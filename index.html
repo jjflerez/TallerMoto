@@ -364,6 +364,7 @@
             <button class="btn btn-ghost" id="btn-tab-hist" onclick="switchVentasTab('hist')">🧾 Facturas</button>
             <button class="btn btn-ghost" id="btn-tab-cot" onclick="switchVentasTab('cot')">📄 Cotizaciones</button>
             <div style="flex:1"></div>
+            <button class="btn btn-danger" style="background:var(--red-dim);color:var(--red);border:1px solid #fca5a5" onclick="openModal('modal-gasto')">📉 Registrar Gasto</button>
             <button class="btn btn-ghost" onclick="generarCierreCaja()">💰 Cierre de Caja</button>
           </div>
 
@@ -852,6 +853,56 @@
     </div>
   </div>
 
+  <!-- Modal: Registrar Gasto -->
+  <div class="modal-overlay" id="modal-gasto">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3>Registrar Gasto (Egreso)</h3>
+        <button class="close-btn" onclick="closeModal('modal-gasto')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Concepto (Ej. Luz, Almuerzo, Proveedor)</label>
+            <input id="g-concepto" placeholder="Motivo del gasto" />
+          </div>
+          <div class="field">
+            <label>Valor a descontar ($)</label>
+            <input id="g-valor" type="number" placeholder="Ej. 15000" />
+          </div>
+          <div class="field">
+            <label>De dónde salió el dinero</label>
+            <select id="g-metodo" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border)">
+              <option value="Efectivo">Caja Fuerte / Efectivo</option>
+              <option value="Transferencia">Cuenta Bancaria / Nequi / App</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-gasto')">Cancelar</button>
+        <button class="btn btn-danger" onclick="saveGasto()">Guardar Gasto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cierre de Caja -->
+  <div class="modal-overlay" id="modal-cierre">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3>Cierre de Caja Diario</h3>
+        <button class="close-btn" onclick="closeModal('modal-cierre')">✕</button>
+      </div>
+      <div class="modal-body" id="cierre-body">
+        <!-- Contenido inyectado por JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cierre')">Cerrar</button>
+        <button class="btn btn-primary" onclick="imprimirCierreCaja()">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div class="toast-container" id="toasts"></div>
 
@@ -874,7 +925,7 @@
   <!-- Librería para exportar a Excel (SheetJS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=5"></script>
 
   <!-- Contenedor para impresión de ticket -->
   <div id="ticket-print" class="ticket-print"></div>
