@@ -432,6 +432,7 @@ function renderMotos() {
     m.placa.toLowerCase().includes(q) || m.marca.toLowerCase().includes(q) || m.modelo.toLowerCase().includes(q)
   );
   const tb = document.getElementById('tabla-motos');
+  if (!tb) return;
   if (!filtered.length) {
     tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🏍️</div>Sin motos</div></td></tr>`;
     return;
@@ -533,6 +534,80 @@ function exportarInventarioExcel() {
   const ws = XLSX.utils.json_to_sheet(datos);
   XLSX.utils.book_append_sheet(wb, ws, "Inventario");
   XLSX.writeFile(wb, "Inventario_MotoTaller.xlsx");
+}
+
+function handleExcelImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+
+      let imported = 0;
+      json.forEach(row => {
+        // Normalizar las llaves a minúsculas sin acentos
+        const normRow = {};
+        for(let key in row) {
+          const newKey = key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          normRow[newKey] = row[key];
+        }
+
+        const codigo = String(normRow['codigo'] || normRow['id'] || '').trim();
+        const descripcion = normRow['descripcion'] || normRow['nombre'] || normRow['repuesto'];
+        
+        if (!codigo || !descripcion) return; // Ignorar filas vacías o inválidas
+        
+        const stock = parseInt(normRow['stock'] || normRow['cantidad']) || 0;
+        const costo = parseFloat(normRow['costo'] || normRow['preciocosto'] || normRow['precio costo']) || 0;
+        const venta = parseFloat(normRow['venta'] || normRow['precio'] || normRow['precioventa'] || normRow['precio venta']) || 0;
+        const categoria = normRow['categoria'] || normRow['familia'] || 'General';
+        const minimo = parseInt(normRow['minimo'] || normRow['min']) || 5;
+        const compat = normRow['compatibilidad'] || normRow['compat'] || normRow['para'] || '';
+
+        const existe = state.inventario.find(x => x.codigo === codigo);
+        
+        if (existe) {
+          // Si existe, se actualiza el stock y precio
+          existe.stock += stock;
+          if (venta > 0) existe.venta = venta;
+        } else {
+          // Si no existe, se crea
+          const id = 'R' + String(state.nextIds.r++).padStart(3, '0');
+          state.inventario.push({
+            id,
+            codigo: codigo,
+            desc: descripcion,
+            cat: categoria,
+            stock: stock,
+            min: minimo,
+            costo: costo,
+            venta: venta,
+            compat: compat
+          });
+          imported++;
+        }
+      });
+
+      if (imported === 0 && json.length > 0) {
+        toast(`Se leyó el archivo pero no se encontraron las columnas 'codigo' y 'descripcion'`, 'error');
+      } else {
+        toast(`Excel procesado. ${imported} nuevos repuestos creados.`, 'success');
+      }
+      
+      refresh();
+      event.target.value = ''; // Reset input
+    } catch (error) {
+      console.error(error);
+      toast('Error al leer el archivo Excel', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function renderInventario() {

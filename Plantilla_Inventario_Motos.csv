@@ -1,0 +1,11 @@
+Codigo,Descripcion,Categoria,Stock,Minimo,Costo,Venta,Compatibilidad
+B001,Bujia NGK C7HSA,Electrico,50,10,8000,15000,Universal 125cc
+A001,Aceite Motul 5100 15W50 4T,Lubricantes,24,5,35000,45000,Motos 4 Tiempos
+F001,Filtro de Aire Deportivo,Filtros,15,5,12000,22000,Pulsar / Apache
+K001,Kit de Arrastre Cassarella,Transmision,8,2,65000,95000,Boxer CT100
+P001,Pastillas de Freno Sinterizadas,Frenos,30,8,45000,65000,Yamaha FZ / R15
+L001,Llanta Michelin Pilot 90/90-18,Llantas,12,4,160000,210000,NKD / RX115
+B002,Bateria YTX4L-BS 12V 4Ah,Electrico,10,3,75000,105000,Honda Wave / Crypton
+C001,Carburador PZ27,Motor,5,2,40000,65000,Motos 150cc
+G001,Guantes Pro-Biker con Proteccion,Accesorios,20,5,25000,40000,Universal
+C002,Casco Integral Certificado DOT,Accesorios,15,3,120000,180000,Universal

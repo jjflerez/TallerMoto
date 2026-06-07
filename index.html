@@ -4,18 +4,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Taller Moto Caribe - Sistema de gestión integral para talleres de motocicletas. Administra clientes, inventario, ventas, y facturación con un panel de control avanzado." />
+  <meta name="keywords" content="taller, motos, gestión de taller, inventario, facturación, punto de venta, software" />
+  <meta name="author" content="Moto Caribe" />
+  <meta name="theme-color" content="#2563eb" />
   <title>Taller Moto Caribe – Gestión Integral</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap"
-    rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 
 <body>
 
   <!-- ══════════════════════════════════════════════
      PANTALLA DE LOGIN
-══════════════════════════════════════════════ -->
+  ══════════════════════════════════════════════ -->
   <div class="login-screen" id="login-screen">
     <div class="login-glow-1"></div>
     <div class="login-glow-2"></div>
@@ -78,9 +83,6 @@
       <div class="nav-section">Gestión</div>
       <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes">
         <span class="nav-icon">👤</span> Clientes
-      </button>
-      <button class="nav-item" onclick="showPage('motos',this)" id="nav-motos">
-        <span class="nav-icon">🏍️</span> Motos
       </button>
       <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario">
         <span class="nav-icon">📦</span> Inventario
@@ -279,41 +281,10 @@
                     <th>Cédula / NIT</th>
                     <th>Teléfono</th>
                     <th>Ciudad</th>
-                    <th>Motos</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tabla-clientes"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── MOTOS ── -->
-        <div class="page" id="page-motos">
-          <div class="section-header">
-            <h3>Motos registradas</h3>
-            <button class="btn btn-primary" onclick="openModal('modal-moto')">+ Nueva moto</button>
-          </div>
-          <div class="card" style="padding:0">
-            <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-              <input class="search-bar" style="width:100%" placeholder="Buscar por placa, marca o modelo..."
-                id="search-motos" oninput="renderMotos()" />
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Placa</th>
-                    <th>Marca / Modelo</th>
-                    <th>Año</th>
-                    <th>Cilindraje</th>
-                    <th>Propietario</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="tabla-motos"></tbody>
               </table>
             </div>
           </div>
@@ -324,6 +295,8 @@
           <div class="section-header">
             <h3>Inventario de Repuestos</h3>
             <div style="display:flex; gap:8px">
+              <input type="file" id="import-excel" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleExcelImport(event)" />
+              <button class="btn btn-ghost" onclick="document.getElementById('import-excel').click()">⬆️ Importar Excel</button>
               <button class="btn btn-ghost" onclick="exportarInventarioExcel()">📥 Descargar Excel</button>
               <button class="btn btn-primary" onclick="openModal('modal-repuesto')">+ Nuevo Repuesto</button>
             </div>
@@ -637,37 +610,6 @@
     </div>
   </div>
 
-  <!-- Modal: Nueva Moto -->
-  <div class="modal-overlay" id="modal-moto">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-moto-title">Registrar moto</h3>
-        <button class="close-btn" onclick="closeModal('modal-moto')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid form-grid-2">
-          <div class="field"><label>Propietario *</label>
-            <select id="m-cliente">
-              <option value="">Seleccionar cliente...</option>
-            </select>
-          </div>
-          <div class="field"><label>Placa *</label><input id="m-placa" placeholder="ABJ-12C" /></div>
-          <div class="field"><label>Marca *</label><input id="m-marca" placeholder="Honda" /></div>
-          <div class="field"><label>Modelo *</label><input id="m-modelo" placeholder="CB 150" /></div>
-          <div class="field"><label>Año</label><input id="m-anio" type="number" placeholder="2022" /></div>
-          <div class="field"><label>Cilindraje</label><input id="m-cc" placeholder="150 cc" /></div>
-          <div class="field"><label>Color</label><input id="m-color" placeholder="Rojo" /></div>
-          <div class="field"><label>Kilometraje actual</label><input id="m-km" type="number" placeholder="15000" />
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal('modal-moto')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveMoto()">Guardar moto</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Modal: Nuevo / Editar Repuesto -->
   <div class="modal-overlay" id="modal-repuesto">
     <div class="modal">
@@ -932,7 +874,7 @@
   <!-- Librería para exportar a Excel (SheetJS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 
   <!-- Contenedor para impresión de ticket -->
   <div id="ticket-print" class="ticket-print"></div>
