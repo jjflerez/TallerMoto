@@ -2554,7 +2554,7 @@ function renderCuentasCobrar() {
 
 function abrirModalAbono(facturaId, saldo) {
   document.getElementById('abono-factura-id').value = facturaId;
-  document.getElementById('abono-saldo-txt').textContent = \`Saldo: \${fmt(saldo)}\`;
+  document.getElementById('abono-saldo-txt').textContent = `Saldo: ${fmt(saldo)}`;
   document.getElementById('abono-valor').value = '';
   document.getElementById('abono-metodo').value = 'Efectivo';
   openModal('modal-abono');
@@ -2596,7 +2596,7 @@ function guardarAbono() {
     pago: metodo,
     total: valor,
     isAbono: true,
-    items: [{ desc: \`Abono a Factura #\${facturaId}\`, qty: 1, precio: valor, subtotal: valor }]
+    items: [{ desc: `Abono a Factura #${facturaId}`, qty: 1, precio: valor, subtotal: valor }]
   });
   
   closeModal('modal-abono');
