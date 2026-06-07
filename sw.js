@@ -2,10 +2,11 @@ const CACHE_NAME = 'moto-caribe-v1';
 const urlsToCache = [
   './',
   './index.html',
-  './styles.css?v=5',
-  './app.js?v=8',
-  './firebase-db.js',
-  './auth.js'
+  './css/styles.css?v=6',
+  './js/app.js?v=9',
+  './js/firebase-db.js',
+  './js/auth.js',
+  './js/data.js'
 ];
 
 self.addEventListener('install', event => {
