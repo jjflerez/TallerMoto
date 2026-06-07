@@ -27,6 +27,7 @@ function showPage(name, btn) {
     motos:      'Motos registradas',
     inventario: 'Inventario',
     ventas:     'Ventas y facturación',
+    contabilidad: 'Contabilidad',
     usuarios:   'Gestión de Usuarios',
   };
   document.getElementById('topbar-title').textContent = titles[name] || name;
@@ -657,7 +658,11 @@ function switchVentasTab(tab) {
   
   if (tab === 'hist') renderVentas();
   if (tab === 'cot') renderCotizaciones();
-  if (tab === 'pos') renderPosCatalog();
+  if (tab === 'pos') {
+    renderPosCatalog();
+    const fechaEl = document.getElementById('v-form-fecha');
+    if (fechaEl) fechaEl.textContent = new Date().toISOString().split('T')[0];
+  }
 }
 
 function generarCotizacion() {
@@ -1758,6 +1763,7 @@ function calculatePeriodPL(period = 'month') {
 }
 
 function createClosingEntry(period = 'month') {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return null;
   const { start, end, totalRevenue, expenseTotals, totalExpenses, profit } = calculatePeriodPL(period);
   if (totalRevenue === 0 && totalExpenses === 0) {
     toast('No hay movimientos para generar un cierre en este periodo', 'warning');
@@ -1835,6 +1841,7 @@ function renderClosingStatus() {
 }
 
 function exportJournalSIE() {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return;
   // Simple SIE-like exporter (tab-separated, minimal fields)
   const lines = [];
   lines.push(';FLAGGA 0');
@@ -1873,7 +1880,7 @@ function renderBankReconciliation() {
           <div style="font-size:13px">${tx.date.split('T')[0]} — ${tx.type} — ${fmt(tx.amount)} <small style="color:var(--text3)">(${tx.ref || ''})</small></div>
           <div style="display:flex;gap:8px;align-items:center">
             <div style="font-size:12px;color:${(tx.reconciled ? 'var(--green)' : 'var(--text3)')}">${tx.reconciled ? 'Conciliado' : 'Pendiente'}</div>
-            <button class="btn btn-ghost btn-sm" onclick="toggleTransactionReconciled('${b.id}','${tx.id}')">Marcar</button>
+              ${ (typeof hasRole === 'function' && hasRole(['Administrador','Contabilidad'])) ? `<button class="btn btn-ghost btn-sm" onclick="toggleTransactionReconciled('${b.id}','${tx.id}')">Marcar</button>` : '' }
           </div>
         </div>
       `).join('')}
@@ -1883,6 +1890,7 @@ function renderBankReconciliation() {
 }
 
 function toggleTransactionReconciled(bankId, txId) {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return;
   const bank = (state.bankAccounts || []).find(b => b.id === bankId);
   if (!bank) return;
   const tx = (bank.transactions || []).find(t => t.id === txId);
@@ -1898,6 +1906,7 @@ function toggleTransactionReconciled(bankId, txId) {
 }
 
 function exportBankTransactions(bankId) {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return;
   const bank = (state.bankAccounts || []).find(b => b.id === bankId);
   if (!bank) return;
   const rows = [];
@@ -1952,6 +1961,7 @@ function renderCashFlow(period = 'month') {
 }
 
 function exportJournalCSV() {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return;
   const rows = [];
   rows.push(['Fecha','Ref','AsientoID','Cuenta','Código','Debe','Haber','Descripción']);
   (state.journalEntries || []).forEach(entry => {
@@ -1972,6 +1982,7 @@ function exportJournalCSV() {
 }
 
 function exportJournalSAI() {
+  if (typeof requireRole === 'function' && !requireRole(['Administrador','Contabilidad'])) return;
   // Export simple SAI-like (semicolons) for contadores: fecha;asiento;cuenta;debe;haber;descripcion
   const lines = [];
   lines.push('SAI_EXPORT;MotoTaller');
@@ -2144,44 +2155,41 @@ function seleccionarItemFormVenta(id, desc, price) {
 }
 
 function agregarItemFormVenta() {
-  try {
-    const descEl = document.getElementById('v-form-item-search');
-    const qtyEl = document.getElementById('v-form-item-qty');
-    const priceEl = document.getElementById('v-form-item-price');
-    const idEl = document.getElementById('v-form-item-id');
+  const descEl = document.getElementById('v-form-item-search');
+  const qtyEl  = document.getElementById('v-form-item-qty');
+  const priceEl = document.getElementById('v-form-item-price');
+  const idEl   = document.getElementById('v-form-item-id');
 
-    if (!descEl || !qtyEl || !priceEl || !idEl) {
-      console.error('agregarItemFormVenta: faltan elementos del formulario', { descEl, qtyEl, priceEl, idEl });
-      toast('Error: formulario incompleto (elementos no encontrados)', 'error');
-      return;
-    }
-
-    const desc = descEl.value.trim();
-    const qty = parseFloat(qtyEl.value) || 1;
-    const price = parseFloat(priceEl.value) || 0;
-    const id = idEl.value;
-
-    console.log('agregarItemFormVenta called', { desc, qty, price, id });
-
-    if (!desc || price <= 0) {
-      return toast('Ingresa una descripción válida y un precio mayor a 0', 'warning');
-    }
-
-    formVentasCarrito.push({ id, desc, qty, price });
-
-    // Limpiar campos de entrada
-    descEl.value = '';
-    qtyEl.value = '1';
-    priceEl.value = '';
-    idEl.value = 'SERV';
-    descEl.focus();
-
-    renderCarritoFormVenta();
-  } catch (err) {
-    console.error('Error en agregarItemFormVenta', err);
-    const msg = err && err.message ? err.message : String(err);
-    toast('Error interno al añadir ítem: ' + msg, 'error');
+  if (!descEl || !qtyEl || !priceEl || !idEl) {
+    toast('Error: no se encontraron los campos del formulario', 'error');
+    return;
   }
+
+  const desc  = descEl.value.trim();
+  const qty   = parseFloat(qtyEl.value) || 1;
+  const price = parseFloat(priceEl.value) || 0;
+  const id    = idEl.value;
+
+  if (!desc) {
+    return toast('Escribe el nombre del repuesto o servicio', 'warning');
+  }
+  if (qty <= 0) {
+    return toast('La cantidad debe ser mayor a 0', 'warning');
+  }
+  if (price <= 0) {
+    return toast('El precio debe ser mayor a 0. Si seleccionaste del inventario, el precio se llena automáticamente.', 'warning');
+  }
+
+  formVentasCarrito.push({ id, desc, qty, price });
+
+  // Limpiar campos
+  descEl.value  = '';
+  qtyEl.value   = '1';
+  priceEl.value = '';
+  idEl.value    = 'SERV';
+  descEl.focus();
+
+  renderCarritoFormVenta();
 }
 
 function eliminarItemFormVenta(index) {
@@ -2190,15 +2198,27 @@ function eliminarItemFormVenta(index) {
 }
 
 function renderCarritoFormVenta() {
-  const tbody = document.getElementById('v-form-cart-body');
-  const totalEl = document.getElementById('v-form-total');
-  
+  const tbody        = document.getElementById('v-form-cart-body');
+  const totalEl      = document.getElementById('v-form-total');
+  const countEl      = document.getElementById('v-form-item-count');
+  const subtotalEl   = document.getElementById('v-form-subtotal-summary');
+  const ivaEl        = document.getElementById('v-form-iva-summary');
+  const totalSumEl   = document.getElementById('v-form-total-summary');
+  const itemListEl   = document.getElementById('v-form-item-list');
+
+  if (!tbody) return; // el formulario no está visible todavía
+
   if (formVentasCarrito.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:10px;">No hay ítems agregados</div></td></tr>';
-    totalEl.textContent = '$0';
+    if (totalEl)    totalEl.textContent  = '0';
+    if (countEl)    countEl.textContent  = '0';
+    if (subtotalEl) subtotalEl.textContent = '$0';
+    if (ivaEl)      ivaEl.textContent     = '$0';
+    if (totalSumEl) totalSumEl.textContent = '$0';
+    if (itemListEl) itemListEl.innerHTML  = '<div style="color:var(--text3);">No hay ítems seleccionados</div>';
     return;
   }
-  
+
   let total = 0;
   tbody.innerHTML = formVentasCarrito.map((item, index) => {
     const sub = item.qty * item.price;
@@ -2210,11 +2230,24 @@ function renderCarritoFormVenta() {
         <td>${fmt(item.price)}</td>
         <td style="font-weight:bold;">${fmt(sub)}</td>
         <td><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="eliminarItemFormVenta(${index})">✕</button></td>
-      </tr>
-    `;
+      </tr>`;
   }).join('');
+
+  const totalConIva = total;
+  const subtotal = total / 1.19;
+  const iva = total - subtotal;
   
-  totalEl.textContent = fmt(total);
+  // Actualizar elementos del resumen
+  if (totalEl)    totalEl.textContent  = totalConIva.toLocaleString('es-CO');
+  if (countEl)    countEl.textContent  = String(formVentasCarrito.length);
+  if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
+  if (ivaEl)      ivaEl.textContent     = fmt(iva);
+  if (totalSumEl) totalSumEl.textContent = fmt(totalConIva);
+  if (itemListEl) {
+    itemListEl.innerHTML = formVentasCarrito.map(item => {
+      return `<div class="summary-item-line"><span>${item.qty} × ${item.desc}</span><strong>${fmt(item.qty * item.price)}</strong></div>`;
+    }).join('');
+  }
 }
 
 function procesarVentaCompleta() {
@@ -2236,8 +2269,8 @@ function procesarVentaCompleta() {
     fecha: new Date().toISOString().split('T')[0],
     clienteId: clienteId || null,
     items: [...formVentasCarrito],
-    subtotal: total,
-    iva: 0,
+    subtotal: total / 1.19,
+    iva: total - (total / 1.19),
     total: total,
     pago,
     estadoPago: pago === 'Crédito' ? 'Pendiente' : 'Pagado',

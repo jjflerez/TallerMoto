@@ -111,6 +111,9 @@ function doLogin() {
       showPage('ventas', document.getElementById('nav-ventas'));
     }
 
+    // Aplicar visibilidad basada en roles a elementos estáticos con data-roles
+    if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
+
     refresh();
   }, 400);
 }
@@ -165,11 +168,64 @@ async function restoreSession() {
         showPage('ventas', document.getElementById('nav-ventas'));
       }
 
+      // Aplicar visibilidad basada en roles a elementos con data-roles
+      if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
+
       refresh();
     } catch(e) {
       localStorage.removeItem('motoTallerUser');
     }
   }
+}
+
+/**
+ * Devuelve el usuario actual (si existe) leyendo la variable en memoria o localStorage.
+ */
+function getCurrentUser() {
+  if (currentUser) return currentUser;
+  try {
+    const s = localStorage.getItem('motoTallerUser');
+    if (!s) return null;
+    currentUser = JSON.parse(s);
+    return currentUser;
+  } catch(e) { return null; }
+}
+
+/**
+ * Comprueba si el usuario tiene alguno de los roles indicados.
+ * roles puede ser una cadena o un array de cadenas.
+ */
+function hasRole(roles) {
+  const u = getCurrentUser();
+  if (!u) return false;
+  if (!roles) return true;
+  if (Array.isArray(roles)) return roles.includes(u.role);
+  return u.role === roles;
+}
+
+/**
+ * Helper para usar en funciones que requieren permiso. Retorna true si autorizado,
+ * si no muestra un toast y retorna false.
+ */
+function requireRole(roles) {
+  if (hasRole(roles)) return true;
+  if (typeof toast === 'function') toast('Acceso denegado: permisos insuficientes', 'error');
+  else alert('Acceso denegado: permisos insuficientes');
+  return false;
+}
+
+/**
+ * Aplica visibilidad en el DOM para elementos que declaran `data-roles="Rol1,Rol2"`.
+ */
+function applyRoleVisibility() {
+  const u = getCurrentUser();
+  document.querySelectorAll('[data-roles]').forEach(el => {
+    const attr = el.getAttribute('data-roles') || '';
+    const roles = attr.split(',').map(s => s.trim()).filter(Boolean);
+    if (!roles.length) { el.style.display = ''; return; }
+    if (!u) { el.style.display = 'none'; return; }
+    el.style.display = roles.includes(u.role) ? '' : 'none';
+  });
 }
 
 /**

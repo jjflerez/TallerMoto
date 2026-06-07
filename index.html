@@ -1,799 +1,942 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Taller Moto Caribe – Gestión Integral</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css?v=2"/>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
+
 <body>
 
-<!-- ══════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════
      PANTALLA DE LOGIN
 ══════════════════════════════════════════════ -->
-<div class="login-screen" id="login-screen">
-  <div class="login-glow-1"></div>
-  <div class="login-glow-2"></div>
+  <div class="login-screen" id="login-screen">
+    <div class="login-glow-1"></div>
+    <div class="login-glow-2"></div>
 
-  <div class="login-left">
-    <div class="login-logo">🔧</div>
-    <h1 class="login-title">Taller Moto Caribe</h1>
-    <p class="login-subtitle">Gestión Integral de Taller</p>
+    <div class="login-left">
+      <div class="login-logo">🔧</div>
+      <h1 class="login-title">Taller Moto Caribe</h1>
+      <p class="login-subtitle">Gestión Integral de Taller</p>
 
-    <div class="login-form">
-      <div class="login-field">
-        <label>Usuario</label>
-        <input id="login-user" type="text" placeholder="Ingresa tu usuario"
-               autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <div class="login-field">
-        <label>Contraseña</label>
-        <div style="position: relative; display: flex; align-items: center;">
-          <input id="login-pass" type="password" placeholder="••••••••"
-                 autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"
-                 style="width: 100%; padding-right: 40px;"/>
-          <button type="button" onclick="toggleVis('login-pass', this)" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          </button>
+      <div class="login-form">
+        <div class="login-field">
+          <label>Usuario</label>
+          <input id="login-user" type="text" placeholder="Ingresa tu usuario" autocomplete="username"
+            onkeydown="if(event.key==='Enter')doLogin()" />
         </div>
-      </div>
-      <div style="text-align: right; margin-bottom: 10px;">
-        <a href="#" style="font-size: 11px; color: var(--text2); text-decoration: none;" onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
-      </div>
-      <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
-      <button class="login-btn" onclick="doLogin()">Ingresar al sistema →</button>
-    </div>
-
-
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     APP PRINCIPAL (oculta hasta hacer login)
-══════════════════════════════════════════════ -->
-<div class="app-shell app-hidden" id="app-shell">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">🔧</div>
-      <h1>Moto Caribe</h1>
-      <span>Gestión de Taller</span>
-    </div>
-    <div class="nav-section">Principal</div>
-    <button class="nav-item active" onclick="showPage('dashboard',this)" id="nav-dashboard">
-      <span class="nav-icon">📊</span> Dashboard
-    </button>
-    <div class="nav-section">Gestión</div>
-    <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes">
-      <span class="nav-icon">👤</span> Clientes
-    </button>
-    <button class="nav-item" onclick="showPage('motos',this)" id="nav-motos">
-      <span class="nav-icon">🏍️</span> Motos
-    </button>
-    <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario">
-      <span class="nav-icon">📦</span> Inventario
-      <span class="badge" id="badge-inv" style="display:none">0</span>
-    </button>
-    <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas">
-      <span class="nav-icon">🧾</span> Ventas
-    </button>
-    <button class="nav-item" onclick="showPage('contabilidad',this)" id="nav-contabilidad">
-      <span class="nav-icon">💼</span> Contabilidad
-    </button>
-    <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none">
-      <span class="nav-icon">👥</span> Usuarios
-    </button>
-    <div class="sidebar-footer">
-      <div id="sidebar-user-name" style="font-weight:600;color:var(--text2);margin-bottom:2px">–</div>
-      <div id="sidebar-user-role" style="font-size:10px;color:var(--text3);margin-bottom:10px">–</div>
-      <div style="display:flex; gap:5px;">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openModalPerfil()">⚙️ Perfil</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="doLogout()">🚪 Salir</button>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ÁREA PRINCIPAL -->
-  <div class="main">
-    <div class="topbar">
-      <div class="mobile-menu-btn" onclick="toggleSidebar()">☰</div>
-      <h2 id="topbar-title">Dashboard</h2>
-      <div class="topbar-right" style="position:relative">
-        <span style="color:var(--text3); font-size:12px; margin-right:8px">Buscar en todo:</span>
-        <input class="search-bar" style="width:300px" placeholder="Placa, Cliente o Repuesto..." id="global-search" oninput="handleGlobalSearch()"/>
-        <div id="global-search-results" class="card" style="position:absolute; top:50px; right:0; width:400px; z-index:1000; display:none; padding:10px; max-height:400px; overflow-y:auto"></div>
-      </div>
-    </div>
-
-    <!-- ── CONTABILIDAD ── -->
-    <div class="page" id="page-contabilidad" style="padding:20px; display:none">
-      <div class="section-header">
-        <h3>Contabilidad</h3>
-      </div>
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex; gap:8px; flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="renderPLReport('month')">📈 Generar P&L (Mes)</button>
-          <button class="btn btn-ghost" onclick="renderPLReport('year')">📈 Generar P&L (Año)</button>
-          <button class="btn btn-primary" onclick="renderBalanceSheet()">📊 Generar Balance</button>
-          <button class="btn btn-primary" onclick="createClosingEntry('month')">🔒 Cierre Mensual</button>
-          <button class="btn btn-ghost" onclick="createClosingEntry('year')">🔒 Cierre Anual</button>
-          <button class="btn btn-ghost" onclick="exportJournalCSV()">⬇️ Exportar Asientos CSV</button>
-          <button class="btn btn-ghost" onclick="exportJournalSAI()">⬇️ Exportar Asientos SAI</button>
-          <button class="btn btn-ghost" onclick="exportJournalSIE()">⬇️ Exportar SIE</button>
-        </div>
-      </div>
-      <div class="card" style="margin-bottom:12px">
-        <div id="acct-closing-status">Presiona "Cierre Mensual" o "Cierre Anual" para registrar el cierre contable.</div>
-      </div>
-      <div class="card" style="margin-bottom:12px">
-        <div id="acct-pl-report">Presiona "Generar P&L" para ver resultados.</div>
-      </div>
-      <div class="card">
-        <div id="acct-balance-report">Presiona "Generar Balance" para ver resultados.</div>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong>P&L por cuenta</strong>
-            <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="renderPLByAccount('month')">Actualizar</button></div>
-          </div>
-          <div id="acct-pl-by-account">--</div>
-        </div>
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong>Flujo de Caja</strong>
-            <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="renderCashFlow('month')">Actualizar</button></div>
-          </div>
-          <div id="acct-cashflow">--</div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <strong>Conciliación Bancaria</strong>
-          <div><button class="btn btn-ghost btn-sm" onclick="renderBankReconciliation()">Refrescar</button></div>
-        </div>
-        <div id="acct-bank-recon">Presiona "Refrescar" para cargar movimientos bancarios.</div>
-      </div>
-    </div>
-
-    <div class="content">
-
-      <!-- ── DASHBOARD ── -->
-      <div class="page active" id="page-dashboard">
-        <div id="alertas-credito"></div>
-
-        <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
-          <div class="stat-card orange">
-            <div class="label">Ventas del Mes</div>
-            <div class="value" id="dash-ventas">$0</div>
-            <div class="sub" id="dash-ventas-sub">0 facturas</div>
-          </div>
-          <div class="stat-card green" id="card-utilidad" style="display:none">
-            <div class="label">Utilidad Repuestos</div>
-            <div class="value" id="dash-utilidad">$0</div>
-            <div class="sub">Ganancia neta mes</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="label">Clientes</div>
-            <div class="value" id="dash-clientes">0</div>
-            <div class="sub">Registrados</div>
-          </div>
-          <div class="stat-card red">
-            <div class="label">Bajo Stock</div>
-            <div class="value" id="dash-stock">0</div>
-            <div class="sub">Repuestos bajo mínimo</div>
-          </div>
-        </div>
-        <div class="card" id="dash-login-history" style="display:none; margin-bottom:20px;">
-          <div class="section-header" style="margin-bottom:12px">
-            <h3>👥 Últimos ingresos</h3>
-          </div>
-          <div id="dash-login-history-list"></div>
-        </div>
-        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px">
-          <div class="card">
-            <div class="section-header" style="margin-bottom:12px">
-              <h3>⚠️ Alertas de Inventario Crítico</h3>
-            </div>
-            <div id="dash-alertas">
-              <div class="empty-state"><div class="icon">📦</div>Todo en orden</div>
-            </div>
-          </div>
-          
-          <div class="card" style="background:var(--orange-dim); border-color:var(--orange)">
-            <div class="section-header" style="margin-bottom:12px">
-              <h3 style="color:var(--orange)">💡 Business Intelligence</h3>
-            </div>
-            <div id="dash-insights" style="font-size:13px; line-height:1.6">
-              <!-- Insights generados por código -->
-            </div>
-          </div>
-        </div>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px">
-          <div class="card">
-            <div class="section-header" style="margin-bottom:12px">
-              <h3>🔥 Repuestos Más Vendidos</h3>
-            </div>
-            <div id="dash-top-vendidos">
-              <div class="empty-state">No hay ventas registradas aún</div>
-            </div>
-          </div>
-          <div class="card" style="background:var(--bg3); border-color:var(--border)">
-            <div class="section-header" style="margin-bottom:12px">
-              <h3>📦 Pedido Rápido a Proveedor</h3>
-            </div>
-            <div style="font-size:13px; color:var(--text2); margin-bottom:15px; line-height:1.5">
-              Genera una lista de compras consolidada de todos los repuestos con stock bajo mínimos y envíala directamente a tu proveedor de repuestos por WhatsApp.
-            </div>
-            <button class="btn btn-primary" onclick="generarPedidoProveedor()" style="width:100%; justify-content:center">
-              💬 Pedir Stock por WhatsApp
+        <div class="login-field">
+          <label>Contraseña</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"
+              onkeydown="if(event.key==='Enter')doLogin()" style="width: 100%; padding-right: 40px;" />
+            <button type="button" onclick="toggleVis('login-pass', this)"
+              style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
             </button>
           </div>
         </div>
+        <div style="text-align: right; margin-bottom: 10px;">
+          <a href="#" style="font-size: 11px; color: var(--text2); text-decoration: none;"
+            onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
+        </div>
+        <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+        <button class="login-btn" onclick="doLogin()">Ingresar al sistema →</button>
       </div>
 
-      <!-- ── CLIENTES ── -->
-      <div class="page" id="page-clientes">
-        <div class="section-header">
-          <h3>Clientes registrados</h3>
-          <button class="btn btn-primary" onclick="openModal('modal-cliente')">+ Nuevo cliente</button>
-        </div>
-        <div class="card" style="padding:0">
-          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-            <input class="search-bar" style="width:100%"
-                   placeholder="Buscar por nombre, cédula o teléfono..."
-                   id="search-clientes" oninput="renderClientes()"/>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>ID</th><th>Nombre</th><th>Cédula / NIT</th>
-                <th>Teléfono</th><th>Ciudad</th><th>Motos</th><th>Acciones</th>
-              </tr></thead>
-              <tbody id="tabla-clientes"></tbody>
-            </table>
-          </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+     APP PRINCIPAL (oculta hasta hacer login)
+══════════════════════════════════════════════ -->
+  <div class="app-shell app-hidden" id="app-shell">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🔧</div>
+        <h1>Moto Caribe</h1>
+        <span>Gestión de Taller</span>
+      </div>
+      <div class="nav-section">Principal</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)" id="nav-dashboard">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <div class="nav-section">Gestión</div>
+      <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes">
+        <span class="nav-icon">👤</span> Clientes
+      </button>
+      <button class="nav-item" onclick="showPage('motos',this)" id="nav-motos">
+        <span class="nav-icon">🏍️</span> Motos
+      </button>
+      <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario">
+        <span class="nav-icon">📦</span> Inventario
+        <span class="badge" id="badge-inv" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas">
+        <span class="nav-icon">🧾</span> Ventas
+      </button>
+      <button class="nav-item" onclick="showPage('contabilidad',this)" id="nav-contabilidad">
+        <span class="nav-icon">💼</span> Contabilidad
+      </button>
+      <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none">
+        <span class="nav-icon">👥</span> Usuarios
+      </button>
+      <div class="sidebar-footer">
+        <div id="sidebar-user-name" style="font-weight:600;color:var(--text2);margin-bottom:2px">–</div>
+        <div id="sidebar-user-role" style="font-size:10px;color:var(--text3);margin-bottom:10px">–</div>
+        <div style="display:flex; gap:5px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openModalPerfil()">⚙️ Perfil</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="doLogout()">🚪 Salir</button>
         </div>
       </div>
+    </aside>
 
-      <!-- ── MOTOS ── -->
-      <div class="page" id="page-motos">
-        <div class="section-header">
-          <h3>Motos registradas</h3>
-          <button class="btn btn-primary" onclick="openModal('modal-moto')">+ Nueva moto</button>
-        </div>
-        <div class="card" style="padding:0">
-          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-            <input class="search-bar" style="width:100%"
-                   placeholder="Buscar por placa, marca o modelo..."
-                   id="search-motos" oninput="renderMotos()"/>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>ID</th><th>Placa</th><th>Marca / Modelo</th>
-                <th>Año</th><th>Cilindraje</th><th>Propietario</th><th>Acciones</th>
-              </tr></thead>
-              <tbody id="tabla-motos"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── INVENTARIO ── -->
-      <div class="page" id="page-inventario">
-        <div class="section-header">
-          <h3>Inventario de Repuestos</h3>
-          <div style="display:flex; gap:8px">
-            <button class="btn btn-ghost" onclick="exportarInventarioExcel()">📥 Descargar Excel</button>
-            <button class="btn btn-primary" onclick="openModal('modal-repuesto')">+ Nuevo Repuesto</button>
-          </div>
-        </div>
-        <div class="card" style="padding:0">
-          <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">
-            <input class="search-bar" style="width:100%"
-                   placeholder="Buscar repuesto..." id="search-inv" oninput="renderInventario()"/>
-            <select class="search-bar" style="width:180px" id="filter-cat" onchange="renderInventario()">
-              <option value="">Todas las categorías</option>
-            </select>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Código</th><th>Descripción</th><th>Compatibilidad</th><th>Categoría</th>
-                <th>Stock</th><th>Stock Mín.</th><th>P. Costo</th>
-                <th>P. Venta</th><th>Estado</th><th>Acciones</th>
-              </tr></thead>
-              <tbody id="tabla-inv"></tbody>
-            </table>
+    <!-- ÁREA PRINCIPAL -->
+    <div class="main">
+      <div class="topbar">
+        <div class="mobile-menu-btn" onclick="toggleSidebar()">☰</div>
+        <h2 id="topbar-title">Dashboard</h2>
+        <div class="topbar-right" style="position:relative">
+          <span style="color:var(--text3); font-size:12px; margin-right:8px">Buscar en todo:</span>
+          <input class="search-bar" style="width:300px" placeholder="Placa, Cliente o Repuesto..." id="global-search"
+            oninput="handleGlobalSearch()" />
+          <div id="global-search-results" class="card"
+            style="position:absolute; top:50px; right:0; width:400px; z-index:1000; display:none; padding:10px; max-height:400px; overflow-y:auto">
           </div>
         </div>
       </div>
 
-      <!-- ── USUARIOS ── -->
-      <div class="page" id="page-usuarios">
-        <div class="section-header">
-          <h3>Gestión de Usuarios</h3>
-          <button class="btn btn-primary" onclick="openModal('modal-usuario')">+ Nuevo Usuario</button>
-        </div>
-        <div class="card" style="padding:0">
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Usuario</th><th>Rol</th><th>Contraseña</th><th>Acciones</th>
-              </tr></thead>
-              <tbody id="tabla-usuarios"></tbody>
-            </table>
+      <div class="content">
+        <!-- ── CONTABILIDAD ── -->
+        <div class="page" id="page-contabilidad" style="padding:20px;">
+          <div class="section-header">
+            <h3>Contabilidad</h3>
           </div>
-        </div>
-      </div>
-
-      <!-- ── VENTAS ── -->
-      <div class="page" id="page-ventas">
-        <!-- Pestañas POS / Historial -->
-        <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-shrink:0;align-items:center">
-          <button class="btn btn-primary" id="btn-tab-pos" onclick="switchVentasTab('pos')">🛒 Punto de Venta</button>
-          <button class="btn btn-ghost" id="btn-tab-hist" onclick="switchVentasTab('hist')">🧾 Facturas</button>
-          <button class="btn btn-ghost" id="btn-tab-cot" onclick="switchVentasTab('cot')">📄 Cotizaciones</button>
-          <div style="flex:1"></div>
-          <button class="btn btn-ghost" onclick="generarCierreCaja()">💰 Cierre de Caja</button>
-        </div>
-
-        <!-- VISTA POS (Modificada a Formulario con Búsqueda) -->
-        <div id="view-pos" style="display:flex; justify-content:center; padding: 20px; width: 100%;">
-          
-          <!-- Elementos ocultos para evitar errores en app.js -->
-          <div style="display:none;">
-            <input id="pos-search" />
-            <input id="pos-compat-search" />
-            <input id="pos-barcode-input" />
-            <div id="pos-category-filters"></div>
-            <div id="pos-catalog"></div>
-            <div id="pos-cart"></div>
-            <span id="pos-subtotal"></span>
-            <span id="pos-iva"></span>
-            <span id="pos-total"></span>
-          </div>
-
-          <!-- Formulario Real -->
-          <div class="card" style="width: 100%; max-width: 800px;">
-            <div class="section-header" style="margin-bottom: 20px;">
-              <h3>Registrar Nueva Venta</h3>
+          <div class="card" style="margin-bottom:12px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="renderPLReport('month')">📈 Generar P&L (Mes)</button>
+              <button class="btn btn-ghost" onclick="renderPLReport('year')">📈 Generar P&L (Año)</button>
+              <button class="btn btn-primary" onclick="renderBalanceSheet()">📊 Generar Balance</button>
+              <button class="btn btn-primary" data-roles="Administrador,Contabilidad"
+                onclick="createClosingEntry('month')">🔒 Cierre Mensual</button>
+              <button class="btn btn-ghost" data-roles="Administrador,Contabilidad"
+                onclick="createClosingEntry('year')">🔒 Cierre Anual</button>
+              <button class="btn btn-ghost" data-roles="Administrador,Contabilidad" onclick="exportJournalCSV()">⬇️
+                Exportar Asientos CSV</button>
+              <button class="btn btn-ghost" data-roles="Administrador,Contabilidad" onclick="exportJournalSAI()">⬇️
+                Exportar Asientos SAI</button>
+              <button class="btn btn-ghost" data-roles="Administrador,Contabilidad" onclick="exportJournalSIE()">⬇️
+                Exportar SIE</button>
             </div>
-            
-            <!-- Cliente -->
-            <div class="form-grid">
-              <div class="field">
-                <label>Cliente</label>
-                <select id="v-form-cliente" class="search-bar" style="width:100%;">
-                  <option value="">Venta Directa / Mostrador</option>
-                </select>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div id="acct-closing-status">Presiona "Cierre Mensual" o "Cierre Anual" para registrar el cierre contable.
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div id="acct-pl-report">Presiona "Generar P&L" para ver resultados.</div>
+          </div>
+          <div class="card">
+            <div id="acct-balance-report">Presiona "Generar Balance" para ver resultados.</div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>P&L por cuenta</strong>
+                <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm"
+                    onclick="renderPLByAccount('month')">Actualizar</button></div>
+              </div>
+              <div id="acct-pl-by-account">--</div>
+            </div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>Flujo de Caja</strong>
+                <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm"
+                    onclick="renderCashFlow('month')">Actualizar</button></div>
+              </div>
+              <div id="acct-cashflow">--</div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <strong>Conciliación Bancaria</strong>
+              <div><button class="btn btn-ghost btn-sm" onclick="renderBankReconciliation()">Refrescar</button></div>
+            </div>
+            <div id="acct-bank-recon">Presiona "Refrescar" para cargar movimientos bancarios.</div>
+          </div>
+        </div>
+
+        <!-- ── DASHBOARD ── -->
+        <div class="page active" id="page-dashboard">
+          <div id="alertas-credito"></div>
+
+          <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
+            <div class="stat-card orange">
+              <div class="label">Ventas del Mes</div>
+              <div class="value" id="dash-ventas">$0</div>
+              <div class="sub" id="dash-ventas-sub">0 facturas</div>
+            </div>
+            <div class="stat-card green" id="card-utilidad" style="display:none">
+              <div class="label">Utilidad Repuestos</div>
+              <div class="value" id="dash-utilidad">$0</div>
+              <div class="sub">Ganancia neta mes</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="label">Clientes</div>
+              <div class="value" id="dash-clientes">0</div>
+              <div class="sub">Registrados</div>
+            </div>
+            <div class="stat-card red">
+              <div class="label">Bajo Stock</div>
+              <div class="value" id="dash-stock">0</div>
+              <div class="sub">Repuestos bajo mínimo</div>
+            </div>
+          </div>
+          <div class="card" id="dash-login-history" style="display:none; margin-bottom:20px;">
+            <div class="section-header" style="margin-bottom:12px">
+              <h3>👥 Últimos ingresos</h3>
+            </div>
+            <div id="dash-login-history-list"></div>
+          </div>
+          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px">
+            <div class="card">
+              <div class="section-header" style="margin-bottom:12px">
+                <h3>⚠️ Alertas de Inventario Crítico</h3>
+              </div>
+              <div id="dash-alertas">
+                <div class="empty-state">
+                  <div class="icon">📦</div>Todo en orden
+                </div>
               </div>
             </div>
 
-            <!-- Agregar Ítem -->
-            <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-top: 15px; background: var(--bg2);">
-              <h4 style="margin-top:0; margin-bottom: 10px; font-size: 14px; color: var(--text2);">Agregar Repuesto o Servicio</h4>
-              <div style="display:flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                <div class="field" style="flex: 3; min-width: 200px; position: relative;">
-                  <label>Buscar Repuesto (o escribe servicio manual)</label>
-                  <input id="v-form-item-search" class="search-bar" style="width:100%" placeholder="Escribe para buscar..." oninput="buscarItemFormVenta()" autocomplete="off" />
-                  <div id="v-form-autocomplete" class="card" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:10; padding:0; max-height:200px; overflow-y:auto; border:1px solid var(--border); margin-top:4px;"></div>
+            <div class="card" style="background:var(--orange-dim); border-color:var(--orange)">
+              <div class="section-header" style="margin-bottom:12px">
+                <h3 style="color:var(--orange)">💡 Business Intelligence</h3>
+              </div>
+              <div id="dash-insights" style="font-size:13px; line-height:1.6">
+                <!-- Insights generados por código -->
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px">
+            <div class="card">
+              <div class="section-header" style="margin-bottom:12px">
+                <h3>🔥 Repuestos Más Vendidos</h3>
+              </div>
+              <div id="dash-top-vendidos">
+                <div class="empty-state">No hay ventas registradas aún</div>
+              </div>
+            </div>
+            <div class="card" style="background:var(--bg3); border-color:var(--border)">
+              <div class="section-header" style="margin-bottom:12px">
+                <h3>📦 Pedido Rápido a Proveedor</h3>
+              </div>
+              <div style="font-size:13px; color:var(--text2); margin-bottom:15px; line-height:1.5">
+                Genera una lista de compras consolidada de todos los repuestos con stock bajo mínimos y envíala
+                directamente a tu proveedor de repuestos por WhatsApp.
+              </div>
+              <button class="btn btn-primary" onclick="generarPedidoProveedor()"
+                style="width:100%; justify-content:center">
+                💬 Pedir Stock por WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CLIENTES ── -->
+        <div class="page" id="page-clientes">
+          <div class="section-header">
+            <h3>Clientes registrados</h3>
+            <button class="btn btn-primary" onclick="openModal('modal-cliente')">+ Nuevo cliente</button>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+              <input class="search-bar" style="width:100%" placeholder="Buscar por nombre, cédula o teléfono..."
+                id="search-clientes" oninput="renderClientes()" />
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Cédula / NIT</th>
+                    <th>Teléfono</th>
+                    <th>Ciudad</th>
+                    <th>Motos</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-clientes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MOTOS ── -->
+        <div class="page" id="page-motos">
+          <div class="section-header">
+            <h3>Motos registradas</h3>
+            <button class="btn btn-primary" onclick="openModal('modal-moto')">+ Nueva moto</button>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+              <input class="search-bar" style="width:100%" placeholder="Buscar por placa, marca o modelo..."
+                id="search-motos" oninput="renderMotos()" />
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Placa</th>
+                    <th>Marca / Modelo</th>
+                    <th>Año</th>
+                    <th>Cilindraje</th>
+                    <th>Propietario</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-motos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── INVENTARIO ── -->
+        <div class="page" id="page-inventario">
+          <div class="section-header">
+            <h3>Inventario de Repuestos</h3>
+            <div style="display:flex; gap:8px">
+              <button class="btn btn-ghost" onclick="exportarInventarioExcel()">📥 Descargar Excel</button>
+              <button class="btn btn-primary" onclick="openModal('modal-repuesto')">+ Nuevo Repuesto</button>
+            </div>
+          </div>
+          <div class="card" style="padding:0">
+            <div
+              style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">
+              <input class="search-bar" style="width:100%" placeholder="Buscar repuesto..." id="search-inv"
+                oninput="renderInventario()" />
+              <select class="search-bar" style="width:180px" id="filter-cat" onchange="renderInventario()">
+                <option value="">Todas las categorías</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Compatibilidad</th>
+                    <th>Categoría</th>
+                    <th>Stock</th>
+                    <th>Stock Mín.</th>
+                    <th>P. Costo</th>
+                    <th>P. Venta</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-inv"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── USUARIOS ── -->
+        <div class="page" id="page-usuarios">
+          <div class="section-header">
+            <h3>Gestión de Usuarios</h3>
+            <button class="btn btn-primary" onclick="openModal('modal-usuario')">+ Nuevo Usuario</button>
+          </div>
+          <div class="card" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Contraseña</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-usuarios"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── VENTAS ── -->
+        <div class="page" id="page-ventas">
+          <!-- Pestañas POS / Historial -->
+          <div
+            style="display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-shrink:0;align-items:center">
+            <button class="btn btn-primary" id="btn-tab-pos" onclick="switchVentasTab('pos')">🛒 Punto de Venta</button>
+            <button class="btn btn-ghost" id="btn-tab-hist" onclick="switchVentasTab('hist')">🧾 Facturas</button>
+            <button class="btn btn-ghost" id="btn-tab-cot" onclick="switchVentasTab('cot')">📄 Cotizaciones</button>
+            <div style="flex:1"></div>
+            <button class="btn btn-ghost" onclick="generarCierreCaja()">💰 Cierre de Caja</button>
+          </div>
+
+          <!-- VISTA POS (Modificada a Formulario con Búsqueda) -->
+          <div id="view-pos" style="padding: 20px 0; width: 100%;">
+            <!-- Elementos ocultos para evitar errores en app.js -->
+            <div style="display:none;">
+              <input id="pos-search" />
+              <input id="pos-compat-search" />
+              <input id="pos-barcode-input" />
+              <div id="pos-category-filters"></div>
+              <div id="pos-catalog"></div>
+              <div id="pos-cart"></div>
+              <span id="pos-subtotal"></span>
+              <span id="pos-iva"></span>
+              <span id="pos-total"></span>
+            </div>
+
+            <div class="invoice-layout">
+              <div class="invoice-main card">
+                <div class="invoice-top">
+                  <div>
+                    <span class="tag">P.O.S.</span>
+                    <h3 style="margin: 10px 0 6px;">Factura de Venta</h3>
+                    <p class="invoice-subtitle">Registra ventas rápidas con cliente, productos y cálculo instantáneo.
+                    </p>
+                  </div>
+                  <div class="invoice-meta-block">
+                    <div class="invoice-badge">Factura <strong id="v-form-factura">000001</strong></div>
+                    <div class="invoice-meta-row">Fecha: <span id="v-form-fecha">--/--/----</span></div>
+                  </div>
                 </div>
-                <div class="field" style="flex: 1; min-width: 80px;">
-                  <label>Cant.</label>
-                  <input id="v-form-item-qty" type="number" value="1" min="1" />
+
+                <div class="invoice-meta-grid">
+                  <div class="field">
+                    <label>Cliente</label>
+                    <select id="v-form-cliente" class="search-bar" style="width:100%;">
+                      <option value="">Venta Directa / Mostrador</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Vendedor</label>
+                    <input class="search-bar" type="text" value="Mostrador" readonly style="width:100%;" />
+                  </div>
                 </div>
-                <div class="field" style="flex: 1; min-width: 100px;">
-                  <label>Precio Unit.</label>
-                  <input id="v-form-item-price" type="number" placeholder="0" />
+
+                <div class="invoice-section card invoice-add-item">
+                  <div class="invoice-section-header">
+                    <div>
+                      <h4 style="margin:0;">Agregar Repuesto o Servicio</h4>
+                      <p style="margin:4px 0 0; color:var(--text3); font-size:13px;">Busca productos de inventario o
+                        añade un servicio manual.</p>
+                    </div>
+                  </div>
+                  <div class="form-grid form-grid-3" style="gap:14px; margin-top:16px; align-items:flex-end;">
+                    <div class="field" style="position: relative;">
+                      <label>Buscar item</label>
+                      <input id="v-form-item-search" class="search-bar" placeholder="Escribe para buscar..."
+                        oninput="buscarItemFormVenta()" autocomplete="off" />
+                      <div id="v-form-autocomplete" class="card"
+                        style="display:none; position:absolute; top:100%; left:0; right:0; z-index:10; padding:0; max-height:200px; overflow-y:auto; border:1px solid var(--border); margin-top:4px;">
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label>Cantidad</label>
+                      <input id="v-form-item-qty" type="number" value="1" min="1" class="search-bar" />
+                    </div>
+                    <div class="field">
+                      <label>Precio unit.</label>
+                      <input id="v-form-item-price" type="number" placeholder="0" class="search-bar" />
+                    </div>
+                    <div class="field" style="display:flex; align-items:flex-end;">
+                      <input type="hidden" id="v-form-item-id" value="SERV" />
+                      <button type="button" class="btn btn-primary btn-block" onclick="agregarItemFormVenta()">➕ Añadir
+                        al detalle</button>
+                    </div>
+                  </div>
+
+                  <div class="table-wrap invoice-table" style="margin-top: 20px;">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Descripción</th>
+                          <th style="width:90px">Cant.</th>
+                          <th style="width:120px">P. Unit.</th>
+                          <th style="width:120px">Subtotal</th>
+                          <th style="width:60px"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="v-form-cart-body">
+                        <tr>
+                          <td colspan="5">
+                            <div class="empty-state" style="padding:10px;">No hay ítems agregados</div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="invoice-footer"
+                    style="margin-top: 20px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <div>
+                      <div style="font-size: 14px; color: var(--text3); margin-bottom: 4px;">Total de venta</div>
+                      <div style="font-size: 32px; font-weight: 800; color: var(--orange);">$<span
+                          id="v-form-total">0</span></div>
+                    </div>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                      <button class="btn btn-secondary btn-block" onclick="openModal('modal-cobro')">💳 Cobrar</button>
+                      <button class="btn btn-primary btn-block" onclick="procesarVentaCompleta()">Registrar
+                        Venta</button>
+                    </div>
+                  </div>
                 </div>
-                <input type="hidden" id="v-form-item-id" value="SERV" />
-                <button type="button" class="btn btn-ghost" style="margin-bottom: 5px; border: 1px solid var(--border);" onclick="agregarItemFormVenta()">➕ Añadir</button>
+
+                <div class="invoice-grid-two" style="gap:20px; margin-top:20px;">
+                  <div class="field">
+                    <label>Forma de Pago</label>
+                    <select id="v-form-pago" class="search-bar" style="width:100%;">
+                      <option>Efectivo</option>
+                      <option>Transferencia</option>
+                      <option>Nequi / Daviplata</option>
+                      <option>Crédito</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Observaciones</label>
+                    <textarea id="v-form-obs" rows="1" class="search-bar" placeholder="Notas adicionales..."></textarea>
+                  </div>
+                </div>
               </div>
 
-              <!-- Tabla de Ítems Agregados -->
-              <div class="table-wrap" style="margin-top: 15px; background: var(--bg);">
+              <div class="invoice-summary-section card" style="margin-top: 20px;">
+                <div class="section-header">
+                  <h4>Resumen de Factura</h4>
+                </div>
+                <div class="summary-row"><span>Items agregados</span><strong id="v-form-item-count">0</strong></div>
+                <div class="summary-row"><span>Subtotal</span><strong id="v-form-subtotal-summary">$0</strong></div>
+                <div class="summary-row"><span>IVA estimado</span><strong id="v-form-iva-summary">$0</strong></div>
+                <div class="summary-row summary-total"><span>Total estimado</span><strong
+                    id="v-form-total-summary">$0</strong></div>
+                <div class="summary-list">
+                  <div class="summary-list-title">Items seleccionados</div>
+                  <div id="v-form-item-list" class="summary-item-list">No hay ítems seleccionados</div>
+                </div>
+                <div style="margin-top:16px; color:var(--text3); font-size:13px; line-height:1.5;">
+                  Usa el botón de cobrar para finalizar la venta y generar el documento de pago.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- VISTA HISTORIAL -->
+          <div id="view-hist" style="display:none; flex:1; flex-direction:column; min-height:0">
+            <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
+              <div class="stat-card orange">
+                <div class="label">Total facturado</div>
+                <div class="value" id="v-total">$0</div>
+              </div>
+              <div class="stat-card green">
+                <div class="label">Repuestos vendidos</div>
+                <div class="value" id="v-rep">$0</div>
+              </div>
+            </div>
+            <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column">
+              <div class="table-wrap" style="flex:1; overflow-y:auto">
                 <table>
                   <thead>
                     <tr>
-                      <th>Descripción</th>
-                      <th>Cant.</th>
-                      <th>P. Unit</th>
+                      <th>N° Factura</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
                       <th>Subtotal</th>
-                      <th></th>
+                      <th>IVA (19%)</th>
+                      <th>Descuento</th>
+                      <th>Total</th>
+                      <th>Pago</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
-                  <tbody id="v-form-cart-body">
-                    <tr><td colspan="5"><div class="empty-state" style="padding:10px;">No hay ítems agregados</div></td></tr>
-                  </tbody>
+                  <tbody id="tabla-ventas"></tbody>
                 </table>
               </div>
             </div>
+          </div>
 
-            <!-- Pago y Observaciones -->
-            <div class="form-grid form-grid-2" style="margin-top: 15px;">
-              <div class="field">
-                <label>Forma de Pago</label>
-                <select id="v-form-pago" class="search-bar" style="width:100%;">
-                  <option>Efectivo</option>
-                  <option>Transferencia</option>
-                  <option>Nequi / Daviplata</option>
-                  <option>Crédito</option>
-                </select>
+          <!-- VISTA COTIZACIONES -->
+          <div id="view-cot" style="display:none; flex:1; flex-direction:column; min-height:0">
+            <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column">
+              <div class="table-wrap" style="flex:1; overflow-y:auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>N° Cotiz.</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Total</th>
+                      <th>Validez</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla-cotizaciones"></tbody>
+                </table>
               </div>
-              <div class="field">
-                <label>Observaciones</label>
-                <textarea id="v-form-obs" rows="1" class="search-bar" style="width:100%" placeholder="Notas adicionales..."></textarea>
-              </div>
-            </div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-              <div style="font-size: 24px; font-weight: bold; color: var(--orange);">
-                Total: <span id="v-form-total">$0</span>
-              </div>
-              <button class="btn btn-primary" style="font-size: 16px; padding: 12px 24px;" onclick="procesarVentaCompleta()">Registrar Venta</button>
             </div>
           </div>
         </div>
 
-        <!-- VISTA HISTORIAL -->
-        <div id="view-hist" style="display:none; flex:1; flex-direction:column; min-height:0">
-          <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
-            <div class="stat-card orange"><div class="label">Total facturado</div><div class="value" id="v-total">$0</div></div>
-            <div class="stat-card green"><div class="label">Repuestos vendidos</div><div class="value" id="v-rep">$0</div></div>
-          </div>
-          <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column">
-            <div class="table-wrap" style="flex:1; overflow-y:auto">
-              <table>
-                <thead><tr>
-                  <th>N° Factura</th><th>Fecha</th><th>Cliente</th>
-                  <th>Subtotal</th><th>IVA (19%)</th><th>Descuento</th>
-                  <th>Total</th><th>Pago</th><th>Acciones</th>
-                </tr></thead>
-                <tbody id="tabla-ventas"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        
-        <!-- VISTA COTIZACIONES -->
-        <div id="view-cot" style="display:none; flex:1; flex-direction:column; min-height:0">
-          <div class="card" style="padding:0; flex:1; overflow:hidden; display:flex; flex-direction:column">
-            <div class="table-wrap" style="flex:1; overflow-y:auto">
-              <table>
-                <thead><tr>
-                  <th>N° Cotiz.</th><th>Fecha</th><th>Cliente</th>
-                  <th>Total</th><th>Validez</th><th>Acciones</th>
-                </tr></thead>
-                <tbody id="tabla-cotizaciones"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
- 
-    </div><!-- /content -->
+      </div><!-- /content -->
 
     </div><!-- /content -->
   </div><!-- /main -->
 
-</div><!-- /app-shell -->
+  </div><!-- /app-shell -->
 
 
-<!-- ══════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════
      MODALES
 ══════════════════════════════════════════════ -->
 
-<!-- Modal: Nuevo / Editar Cliente -->
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-cliente-title">Nuevo cliente</h3>
-      <button class="close-btn" onclick="closeModal('modal-cliente')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid form-grid-2">
-        <div class="field"><label>Nombre completo *</label><input id="c-nombre" placeholder="Carlos Martínez"/></div>
-        <div class="field"><label>Cédula / NIT *</label><input id="c-cedula" placeholder="10.234.567"/></div>
-        <div class="field"><label>Teléfono / WhatsApp *</label><input id="c-tel" placeholder="315 234 5678"/></div>
-        <div class="field"><label>Ciudad</label><input id="c-ciudad" placeholder="Medellín"/></div>
-        <div class="field" style="grid-column:1/-1">
-          <label>Correo electrónico</label>
-          <input id="c-email" placeholder="correo@ejemplo.com" type="email"/>
-        </div>
+  <!-- Modal: Nuevo / Editar Cliente -->
+  <div class="modal-overlay" id="modal-cliente">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-cliente-title">Nuevo cliente</h3>
+        <button class="close-btn" onclick="closeModal('modal-cliente')">✕</button>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveCliente()">Guardar cliente</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Nueva Moto -->
-<div class="modal-overlay" id="modal-moto">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-moto-title">Registrar moto</h3>
-      <button class="close-btn" onclick="closeModal('modal-moto')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid form-grid-2">
-        <div class="field"><label>Propietario *</label>
-          <select id="m-cliente"><option value="">Seleccionar cliente...</option></select>
-        </div>
-        <div class="field"><label>Placa *</label><input id="m-placa" placeholder="ABJ-12C"/></div>
-        <div class="field"><label>Marca *</label><input id="m-marca" placeholder="Honda"/></div>
-        <div class="field"><label>Modelo *</label><input id="m-modelo" placeholder="CB 150"/></div>
-        <div class="field"><label>Año</label><input id="m-anio" type="number" placeholder="2022"/></div>
-        <div class="field"><label>Cilindraje</label><input id="m-cc" placeholder="150 cc"/></div>
-        <div class="field"><label>Color</label><input id="m-color" placeholder="Rojo"/></div>
-        <div class="field"><label>Kilometraje actual</label><input id="m-km" type="number" placeholder="15000"/></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-moto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveMoto()">Guardar moto</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Nuevo / Editar Repuesto -->
-<div class="modal-overlay" id="modal-repuesto">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-rep-title">Nuevo repuesto</h3>
-      <button class="close-btn" onclick="closeModal('modal-repuesto')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid form-grid-2">
-        <div class="field"><label>Código *</label><input id="r-codigo" placeholder="R001"/></div>
-        <div class="field"><label>Categoría *</label><input id="r-cat" placeholder="Lubricantes"/></div>
-        <div class="field" style="grid-column:1/-1">
-          <label>Descripción *</label>
-          <input id="r-desc" placeholder="Aceite Motor 10W-40 / 1L"/>
-        </div>
-        <div class="field" style="grid-column:1/-1">
-          <label>Motos compatibles (Modelos)</label>
-          <input id="r-compat" placeholder="Ej: Boxer CT100, Pulsar NS200, AKT 125"/>
-        </div>
-        <div class="field"><label>Stock actual *</label><input id="r-stock" type="number" placeholder="0" min="0"/></div>
-        <div class="field"><label>Stock mínimo *</label><input id="r-min" type="number" placeholder="5" min="0"/></div>
-        <div class="field"><label>Precio costo (COP)</label><input id="r-costo" type="number" placeholder="12000" min="0"/></div>
-        <div class="field"><label>Precio venta (COP) *</label><input id="r-venta" type="number" placeholder="18500" min="0"/></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-repuesto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveRepuesto()">Guardar repuesto</button>
-    </div>
-  </div>
-</div>
-
-
-
-<!-- Modal: Cobro -->
-<div class="modal-overlay" id="modal-cobro">
-  <div class="modal" style="width:400px">
-    <div class="modal-header">
-      <h3>Cobrar Venta</h3>
-      <button class="close-btn" onclick="closeModal('modal-cobro')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:12px;color:var(--text3)">Total a cobrar</div>
-        <div style="font-size:32px;font-weight:700;color:var(--orange)" id="cobro-total-view">$0</div>
-      </div>
-      <div class="form-grid">
-        <div class="field"><label>Cliente (Opcional)</label>
-          <select id="cobro-cliente" onchange="onCobroClienteChange()"><option value="">Venta Directa / Mostrador</option></select>
-        </div>
-        <div class="field" id="field-cobro-tel">
-          <label>Teléfono Cliente</label>
-          <input id="cobro-tel" type="tel" class="search-bar" placeholder="Ej: 315 234 5678"/>
-        </div>
-        <div class="field"><label>Forma de pago</label>
-          <select id="cobro-pago" onchange="toggleFechaCredito()">
-            <option>Efectivo</option>
-            <option>Transferencia</option>
-            <option>Nequi / Daviplata</option>
-            <option>Crédito</option>
-          </select>
-        </div>
-        <div class="field" id="field-fecha-pago" style="display:none">
-          <label>Fecha prometida de pago</label>
-          <input id="cobro-fecha-pago" type="date" class="search-bar"/>
-        </div>
-        <div class="field"><label>Descuento total (COP)</label>
-          <input id="cobro-desc" type="number" placeholder="0" oninput="calcCobro()"/>
-        </div>
-        <div class="field">
-          <label>Observaciones</label>
-          <textarea id="cobro-obs" rows="2" placeholder="Notas adicionales..."></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cobro')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePosSale()">Confirmar Venta</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Datos de Cotización Rápida -->
-<div class="modal-overlay" id="modal-cot-info">
-  <div class="modal">
-    <div class="modal-header">
-      <h4>Datos del Cliente (Cotización)</h4>
-      <button class="btn-close" onclick="closeModal('modal-cot-info')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="login-field" style="margin-bottom:15px">
-        <label>Nombre del Cliente</label>
-        <input type="text" id="cot-nombre-manual" placeholder="Ej: Juan Pérez"/>
-      </div>
-      <div class="login-field">
-        <label>Teléfono / WhatsApp</label>
-        <input type="text" id="cot-tel-manual" placeholder="Ej: 3001234567"/>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cot-info')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarGenerarCotizacion()">Generar Cotización →</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Mi Perfil -->
-<div class="modal-overlay" id="modal-perfil">
-  <div class="modal" style="width:350px">
-    <div class="modal-header">
-      <h3>Mi Perfil</h3>
-      <button class="close-btn" onclick="closeModal('modal-perfil')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field">
-          <label>Nombre Completo</label>
-          <input id="p-nombre" placeholder="Tu nombre"/>
-        </div>
-        <div class="field">
-          <label>Nueva Contraseña</label>
-          <div style="position: relative; display: flex; align-items: center;">
-            <input id="p-pass" type="password" placeholder="Tu contraseña" style="width: 100%; padding-right: 40px;"/>
-            <button type="button" onclick="toggleVis('p-pass', this)" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
+      <div class="modal-body">
+        <div class="form-grid form-grid-2">
+          <div class="field"><label>Nombre completo *</label><input id="c-nombre" placeholder="Carlos Martínez" /></div>
+          <div class="field"><label>Cédula / NIT *</label><input id="c-cedula" placeholder="10.234.567" /></div>
+          <div class="field"><label>Teléfono / WhatsApp *</label><input id="c-tel" placeholder="315 234 5678" /></div>
+          <div class="field"><label>Ciudad</label><input id="c-ciudad" placeholder="Medellín" /></div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Correo electrónico</label>
+            <input id="c-email" placeholder="correo@ejemplo.com" type="email" />
           </div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-perfil')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-<!-- Modal: Cierre de Caja -->
-<div class="modal-overlay" id="modal-cierre">
-  <div class="modal" style="width:380px">
-    <div class="modal-header">
-      <h3>Resumen de Caja (Hoy)</h3>
-      <button class="close-btn" onclick="closeModal('modal-cierre')">✕</button>
-    </div>
-    <div class="modal-body" id="cierre-body">
-      <!-- El contenido se genera dinámicamente -->
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cierre')">Cerrar</button>
-      <button class="btn btn-primary" onclick="imprimirCierre()">🖨️ Imprimir Cierre</button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCliente()">Guardar cliente</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Modal: Usuario (Admin Only) -->
-<div class="modal-overlay" id="modal-usuario">
-  <div class="modal" style="width:380px">
-    <div class="modal-header">
-      <h3 id="modal-user-title">Nuevo Usuario</h3>
-      <button class="close-btn" onclick="closeModal('modal-usuario')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:flex; flex-direction:column; gap:12px">
-        <div class="field">
-          <label>Nombre de Usuario *</label>
-          <input id="u-user" placeholder="ej: mecanico1"/>
-        </div>
-        <div class="field">
-          <label>Contraseña *</label>
-          <div style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="u-pass" placeholder="****" style="width: 100%; padding-right: 40px;"/>
-            <button type="button" onclick="toggleVis('u-pass', this)" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
+  <!-- Modal: Nueva Moto -->
+  <div class="modal-overlay" id="modal-moto">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-moto-title">Registrar moto</h3>
+        <button class="close-btn" onclick="closeModal('modal-moto')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid form-grid-2">
+          <div class="field"><label>Propietario *</label>
+            <select id="m-cliente">
+              <option value="">Seleccionar cliente...</option>
+            </select>
+          </div>
+          <div class="field"><label>Placa *</label><input id="m-placa" placeholder="ABJ-12C" /></div>
+          <div class="field"><label>Marca *</label><input id="m-marca" placeholder="Honda" /></div>
+          <div class="field"><label>Modelo *</label><input id="m-modelo" placeholder="CB 150" /></div>
+          <div class="field"><label>Año</label><input id="m-anio" type="number" placeholder="2022" /></div>
+          <div class="field"><label>Cilindraje</label><input id="m-cc" placeholder="150 cc" /></div>
+          <div class="field"><label>Color</label><input id="m-color" placeholder="Rojo" /></div>
+          <div class="field"><label>Kilometraje actual</label><input id="m-km" type="number" placeholder="15000" />
           </div>
         </div>
-        <div class="field">
-          <label>Rol de Usuario *</label>
-          <select id="u-role" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text)">
-            <option value="Empleado">Empleado (Solo ventas)</option>
-            <option value="Administrador">Administrador (Acceso total)</option>
-          </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-moto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveMoto()">Guardar moto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo / Editar Repuesto -->
+  <div class="modal-overlay" id="modal-repuesto">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-rep-title">Nuevo repuesto</h3>
+        <button class="close-btn" onclick="closeModal('modal-repuesto')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid form-grid-2">
+          <div class="field"><label>Código *</label><input id="r-codigo" placeholder="R001" /></div>
+          <div class="field"><label>Categoría *</label><input id="r-cat" placeholder="Lubricantes" /></div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Descripción *</label>
+            <input id="r-desc" placeholder="Aceite Motor 10W-40 / 1L" />
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Motos compatibles (Modelos)</label>
+            <input id="r-compat" placeholder="Ej: Boxer CT100, Pulsar NS200, AKT 125" />
+          </div>
+          <div class="field"><label>Stock actual *</label><input id="r-stock" type="number" placeholder="0" min="0" />
+          </div>
+          <div class="field"><label>Stock mínimo *</label><input id="r-min" type="number" placeholder="5" min="0" />
+          </div>
+          <div class="field"><label>Precio costo (COP)</label><input id="r-costo" type="number" placeholder="12000"
+              min="0" /></div>
+          <div class="field"><label>Precio venta (COP) *</label><input id="r-venta" type="number" placeholder="18500"
+              min="0" /></div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-usuario')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveUsuario()">Guardar Usuario</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Hoja de Vida (Historial Moto) -->
-<div class="modal-overlay" id="modal-hoja-vida">
-  <div class="modal" style="width:700px">
-    <div class="modal-header">
-      <h3 id="hj-placa-title">Hoja de Vida: ---</h3>
-      <button class="close-btn" onclick="closeModal('modal-hoja-vida')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Factura</th>
-              <th>Detalle / Repuestos</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-hoja-vida"></tbody>
-        </table>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-repuesto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveRepuesto()">Guardar repuesto</button>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="closeModal('modal-hoja-vida')">Cerrar</button>
+  </div>
+
+
+
+  <!-- Modal: Cobro -->
+  <div class="modal-overlay" id="modal-cobro">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3>Cobrar Venta</h3>
+        <button class="close-btn" onclick="closeModal('modal-cobro')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:12px;color:var(--text3)">Total a cobrar</div>
+          <div style="font-size:32px;font-weight:700;color:var(--orange)" id="cobro-total-view">$0</div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Cliente (Opcional)</label>
+            <select id="cobro-cliente" onchange="onCobroClienteChange()">
+              <option value="">Venta Directa / Mostrador</option>
+            </select>
+          </div>
+          <div class="field" id="field-cobro-tel">
+            <label>Teléfono Cliente</label>
+            <input id="cobro-tel" type="tel" class="search-bar" placeholder="Ej: 315 234 5678" />
+          </div>
+          <div class="field"><label>Forma de pago</label>
+            <select id="cobro-pago" onchange="toggleFechaCredito()">
+              <option>Efectivo</option>
+              <option>Transferencia</option>
+              <option>Nequi / Daviplata</option>
+              <option>Crédito</option>
+            </select>
+          </div>
+          <div class="field" id="field-fecha-pago" style="display:none">
+            <label>Fecha prometida de pago</label>
+            <input id="cobro-fecha-pago" type="date" class="search-bar" />
+          </div>
+          <div class="field"><label>Descuento total (COP)</label>
+            <input id="cobro-desc" type="number" placeholder="0" oninput="calcCobro()" />
+          </div>
+          <div class="field">
+            <label>Observaciones</label>
+            <textarea id="cobro-obs" rows="2" placeholder="Notas adicionales..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cobro')">Cancelar</button>
+        <button class="btn btn-primary" onclick="savePosSale()">Confirmar Venta</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toasts"></div>
+  <!-- Modal: Datos de Cotización Rápida -->
+  <div class="modal-overlay" id="modal-cot-info">
+    <div class="modal">
+      <div class="modal-header">
+        <h4>Datos del Cliente (Cotización)</h4>
+        <button class="btn-close" onclick="closeModal('modal-cot-info')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="login-field" style="margin-bottom:15px">
+          <label>Nombre del Cliente</label>
+          <input type="text" id="cot-nombre-manual" placeholder="Ej: Juan Pérez" />
+        </div>
+        <div class="login-field">
+          <label>Teléfono / WhatsApp</label>
+          <input type="text" id="cot-tel-manual" placeholder="Ej: 3001234567" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cot-info')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarGenerarCotizacion()">Generar Cotización →</button>
+      </div>
+    </div>
+  </div>
 
-<!-- ══════════════════════════════════════════════
+  <!-- Modal: Mi Perfil -->
+  <div class="modal-overlay" id="modal-perfil">
+    <div class="modal" style="width:350px">
+      <div class="modal-header">
+        <h3>Mi Perfil</h3>
+        <button class="close-btn" onclick="closeModal('modal-perfil')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Nombre Completo</label>
+            <input id="p-nombre" placeholder="Tu nombre" />
+          </div>
+          <div class="field">
+            <label>Nueva Contraseña</label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input id="p-pass" type="password" placeholder="Tu contraseña"
+                style="width: 100%; padding-right: 40px;" />
+              <button type="button" onclick="toggleVis('p-pass', this)"
+                style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-perfil')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <!-- Modal: Cierre de Caja -->
+  <div class="modal-overlay" id="modal-cierre">
+    <div class="modal" style="width:380px">
+      <div class="modal-header">
+        <h3>Resumen de Caja (Hoy)</h3>
+        <button class="close-btn" onclick="closeModal('modal-cierre')">✕</button>
+      </div>
+      <div class="modal-body" id="cierre-body">
+        <!-- El contenido se genera dinámicamente -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cierre')">Cerrar</button>
+        <button class="btn btn-primary" onclick="imprimirCierre()">🖨️ Imprimir Cierre</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Usuario (Admin Only) -->
+  <div class="modal-overlay" id="modal-usuario">
+    <div class="modal" style="width:380px">
+      <div class="modal-header">
+        <h3 id="modal-user-title">Nuevo Usuario</h3>
+        <button class="close-btn" onclick="closeModal('modal-usuario')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <div class="field">
+            <label>Nombre de Usuario *</label>
+            <input id="u-user" placeholder="ej: mecanico1" />
+          </div>
+          <div class="field">
+            <label>Contraseña *</label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="u-pass" placeholder="****" style="width: 100%; padding-right: 40px;" />
+              <button type="button" onclick="toggleVis('u-pass', this)"
+                style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Rol de Usuario *</label>
+            <select id="u-role"
+              style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text)">
+              <option value="Empleado">Empleado (Solo ventas)</option>
+              <option value="Administrador">Administrador (Acceso total)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-usuario')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveUsuario()">Guardar Usuario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Hoja de Vida (Historial Moto) -->
+  <div class="modal-overlay" id="modal-hoja-vida">
+    <div class="modal" style="width:700px">
+      <div class="modal-header">
+        <h3 id="hj-placa-title">Hoja de Vida: ---</h3>
+        <button class="close-btn" onclick="closeModal('modal-hoja-vida')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Factura</th>
+                <th>Detalle / Repuestos</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-hoja-vida"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('modal-hoja-vida')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toasts"></div>
+
+  <!-- ══════════════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════════════ -->
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<script src="data.js"></script>
-<script src="firebase-db.js"></script>
-<script src="auth.js"></script>
-<!-- Librería para generar PDFs profesionales -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="data.js"></script>
+  <script src="firebase-db.js"></script>
+  <script src="auth.js"></script>
+  <!-- Librería para generar PDFs profesionales -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<!-- Librería para envío de correos directos (EmailJS) -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <!-- Librería para envío de correos directos (EmailJS) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-<!-- Librería para exportar a Excel (SheetJS) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Librería para exportar a Excel (SheetJS) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
 
-<!-- Contenedor para impresión de ticket -->
-<div id="ticket-print" class="ticket-print"></div>
+  <!-- Contenedor para impresión de ticket -->
+  <div id="ticket-print" class="ticket-print"></div>
 
 </body>
+
 </html>
