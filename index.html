@@ -71,39 +71,43 @@
     <!-- SIDEBAR -->
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
     <aside class="sidebar" id="sidebar">
-      <button class="collapse-btn" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">◀</button>
+      <button class="collapse-btn" onclick="document.getElementById('sidebar').classList.toggle('collapsed')" title="Minimizar / Expandir">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
       <div class="sidebar-logo">
         <div class="logo-icon">🔧</div>
-        <h1>Moto Caribe</h1>
-        <span>Gestión de Taller</span>
+        <div>
+          <h1>Moto Caribe</h1>
+          <span>Gestión de Taller</span>
+        </div>
       </div>
       <div class="nav-section">Principal</div>
-      <button class="nav-item active" onclick="showPage('dashboard',this)" id="nav-dashboard">
-        <span class="nav-icon">📊</span> Dashboard
+      <button class="nav-item active" onclick="showPage('dashboard',this)" id="nav-dashboard" title="Dashboard">
+        <span class="nav-icon">📊</span> <span class="nav-text">Dashboard</span>
       </button>
       <div class="nav-section">Gestión</div>
-      <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes">
-        <span class="nav-icon">👤</span> Clientes
+      <button class="nav-item" onclick="showPage('clientes',this)" id="nav-clientes" title="Clientes">
+        <span class="nav-icon">👤</span> <span class="nav-text">Clientes</span>
       </button>
-      <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario">
-        <span class="nav-icon">📦</span> Inventario
+      <button class="nav-item" onclick="showPage('inventario',this)" id="nav-inventario" title="Inventario">
+        <span class="nav-icon">📦</span> <span class="nav-text">Inventario</span>
         <span class="badge" id="badge-inv" style="display:none">0</span>
       </button>
-      <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas">
-        <span class="nav-icon">🧾</span> Ventas
+      <button class="nav-item" onclick="showPage('ventas',this)" id="nav-ventas" title="Ventas">
+        <span class="nav-icon">🧾</span> <span class="nav-text">Ventas</span>
       </button>
-      <button class="nav-item" onclick="showPage('contabilidad',this)" id="nav-contabilidad">
-        <span class="nav-icon">💼</span> Contabilidad
+      <button class="nav-item" onclick="showPage('contabilidad',this)" id="nav-contabilidad" title="Contabilidad">
+        <span class="nav-icon">💼</span> <span class="nav-text">Contabilidad</span>
       </button>
-      <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none">
-        <span class="nav-icon">👥</span> Usuarios
+      <button class="nav-item" onclick="showPage('usuarios',this)" id="nav-usuarios" style="display:none" title="Usuarios">
+        <span class="nav-icon">👥</span> <span class="nav-text">Usuarios</span>
       </button>
       <div class="sidebar-footer">
         <div id="sidebar-user-name" style="font-weight:600;color:var(--text2);margin-bottom:2px">–</div>
         <div id="sidebar-user-role" style="font-size:10px;color:var(--text3);margin-bottom:10px">–</div>
-        <div style="display:flex; gap:5px;">
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openModalPerfil()">⚙️ Perfil</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="doLogout()">🚪 Salir</button>
+        <div style="display:flex; gap:5px; flex-direction:column" class="footer-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openModalPerfil()" title="Perfil">⚙️ <span class="nav-text">Perfil</span></button>
+          <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Salir">🚪 <span class="nav-text">Salir</span></button>
         </div>
       </div>
     </aside>
@@ -926,7 +930,7 @@
   <!-- Librería para exportar a Excel (SheetJS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 
   <!-- Contenedor para impresión de ticket -->
   <div id="ticket-print" class="ticket-print"></div>
