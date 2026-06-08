@@ -2326,6 +2326,60 @@ function renderCarritoFormVenta() {
   }
 }
 
+function abrirCalculadoraCobro() {
+  if (formVentasCarrito.length === 0) {
+    toast('Agrega productos antes de cobrar', 'error');
+    return;
+  }
+  const totalStr = document.getElementById('v-form-total').textContent.replace(/\./g, '');
+  const total = parseInt(totalStr) || 0;
+  
+  if (total <= 0) {
+    toast('El total debe ser mayor a 0', 'error');
+    return;
+  }
+
+  document.getElementById('cobro-total-txt').textContent = fmt(total);
+  document.getElementById('cobro-recibido').value = '';
+  document.getElementById('cobro-vuelto-txt').textContent = '$0';
+  document.getElementById('cobro-vuelto-txt').style.color = 'var(--text3)';
+  
+  openModal('modal-cobro');
+  
+  setTimeout(() => {
+    document.getElementById('cobro-recibido').focus();
+  }, 100);
+}
+
+function calcularVuelto() {
+  const totalStr = document.getElementById('v-form-total').textContent.replace(/\./g, '');
+  const total = parseInt(totalStr) || 0;
+  const recibidoStr = document.getElementById('cobro-recibido').value;
+  const recibido = parseInt(recibidoStr) || 0;
+  
+  const vuelto = recibido - total;
+  const vueltoTxt = document.getElementById('cobro-vuelto-txt');
+  
+  if (!recibidoStr) {
+    vueltoTxt.textContent = '$0';
+    vueltoTxt.style.color = 'var(--text3)';
+    return;
+  }
+
+  if (vuelto < 0) {
+    vueltoTxt.textContent = "Faltan " + fmt(Math.abs(vuelto));
+    vueltoTxt.style.color = "var(--red)";
+  } else {
+    vueltoTxt.textContent = fmt(vuelto);
+    vueltoTxt.style.color = "var(--green)";
+  }
+}
+
+function procesarVentaDesdeModal() {
+  closeModal('modal-cobro');
+  procesarVentaCompleta();
+}
+
 function procesarVentaCompleta() {
   if (formVentasCarrito.length === 0) {
     return toast('Agrega al menos un ítem a la venta', 'warning');

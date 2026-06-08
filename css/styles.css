@@ -718,3 +718,18 @@ tbody tr:hover      { background: var(--bg3); }
   .topbar h2 { font-size: 16px; }
   .topbar-right span { display: none; }
 }
+
+/* ── Print & PDF generation ────────────────────────────────── */
+.ticket-print {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 100%;
+}
+@media print {
+  body > *:not(#toasts) { display: none !important; }
+  .ticket-print { 
+    display: block !important; 
+    position: static !important; 
+  }
+}

@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1048/1048313.png">
-  <link rel="stylesheet" href="css/styles.css?v=8" />
+  <link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 
 <body>
@@ -479,9 +479,8 @@
                           id="v-form-total">0</span></div>
                     </div>
                     <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                      <button class="btn btn-secondary btn-block" onclick="openModal('modal-cobro')">💳 Cobrar</button>
-                      <button class="btn btn-primary btn-block" onclick="procesarVentaCompleta()">Registrar
-                        Venta</button>
+                      <button class="btn btn-primary btn-block" onclick="abrirCalculadoraCobro()" style="font-size:18px; padding:15px; border-radius:12px;">💳 Cobrar</button>
+
                     </div>
                   </div>
                 </div>
@@ -663,6 +662,38 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal('modal-abono')">Cancelar</button>
         <button class="btn btn-primary" onclick="guardarAbono()">Registrar Pago</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Calculadora de Cobro (Vuelto) -->
+  <div class="modal-overlay" id="modal-cobro">
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <h3>Calculadora de Pago</h3>
+        <button class="close-btn" onclick="closeModal('modal-cobro')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align:center; margin-bottom:20px;">
+          <div style="font-size:14px; color:var(--text3)">Total a Pagar</div>
+          <div style="font-size:42px; font-family:var(--font-cond); font-weight:800; color:var(--primary)" id="cobro-total-txt">$0</div>
+        </div>
+        
+        <div class="form-grid">
+          <div class="field">
+            <label>El Cliente Paga Con ($)</label>
+            <input id="cobro-recibido" type="number" placeholder="Ej. 50000" oninput="calcularVuelto()" style="font-size:20px; font-weight:bold; padding:14px; text-align:center" />
+          </div>
+        </div>
+
+        <div style="margin-top:20px; padding:20px; border-radius:16px; background:var(--bg3); text-align:center; border: 1px solid var(--border2)">
+           <div style="font-size:13px; color:var(--text2); text-transform:uppercase; font-weight:800; letter-spacing: 1px">Cambio a Devolver</div>
+           <div id="cobro-vuelto-txt" style="font-size:36px; font-family:var(--font-cond); font-weight:900; color:var(--text3); margin-top:8px">$0</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cobro')">Atrás</button>
+        <button class="btn btn-primary" onclick="procesarVentaDesdeModal()" style="font-size: 16px; font-weight:700">Registrar Venta →</button>
       </div>
     </div>
   </div>
